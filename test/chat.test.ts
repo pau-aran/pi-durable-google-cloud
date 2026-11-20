@@ -1,0 +1,67 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { BACKGROUND_CONTEXT as context } from "@earendil-works/chord/context";
+import { createModels } from "@earendil-works/pi-ai/models";
+import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "@earendil-works/pi-ai/providers/faux";
+import { Harness, MemoryStorage } from "@earendil-works/pi-durable";
+import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
+import { expect, test } from "vitest";
+import { createChatHarnessOptions } from "../src/chat.ts";
+
+test("the root conversation gets an OpenAI model and only the remind tool", async () => {
+  const harness = await Harness.open(new MemoryStorage(), createChatHarnessOptions(), context);
+  const agent = await (await harness.root(context)).agent(context);
+  expect(agent.model).toMatchObject({ provider: "openai", modelId: "gpt-6.1-sol" });
+  expect(agent.tools.map((tool) => tool.name)).toEqual(["remind"]);
+  await harness.close(context);
+});
+
+test("remind delivers its text as a new input after the delay, across a restart", async () => {
+  const faux = fauxProvider();
+  const models = createModels();
+  models.setProvider(faux.provider);
+  const model = faux.getModel();
+  let now = 1_000_000;
+  // `onWake` as on the real host: the Harness arms no timer, and the test wakes it.
+  const options = { ...createChatHarnessOptions(), models, now: () => now, onWake: () => {} };
+  const file = join(mkdtempSync(join(tmpdir(), "chat-")), "session.sqlite");
+
+  faux.setResponses([
+    fauxAssistantMessage(fauxToolCall("remind", { text: "drink tea", seconds: 90 }), { stopReason: "toolUse" }),
+    fauxAssistantMessage("I will remind you."),
+    fauxAssistantMessage("Time to drink tea."),
+  ]);
+
+  let harness = await Harness.open(await openNodeSqliteStorage(file), options, context);
+  let root = await harness.root(context, { agent: { model: { provider: model.provider, modelId: model.id } } });
+  const submission = await root.submit({ type: "input", content: "Remind me to drink tea in 90 s" }, context);
+  expect((await submission.wait(context)).status).toBe("done");
+  await harness.waitForIdle(context);
+  expect(harness.wake().at).toBe(now + 90_000);
+  await harness.close(context);
+
+  harness = await Harness.open(await openNodeSqliteStorage(file), options, context);
+  root = await harness.root(context);
+  expect(harness.wake().at).toBe(now + 90_000);
+
+  // Not due yet: a wake changes nothing.
+  now += 89_000;
+  harness.resume();
+  await harness.waitForIdle(context);
+  expect(faux.state.callCount).toBe(2);
+
+  now += 1_000;
+  const [reminder] = (await harness.inspect(context)).tasks;
+  harness.resume();
+  await harness.waitForTask(reminder!.record.id, context);
+  await harness.waitForIdle(context);
+
+  const { messages } = await root.context(context);
+  expect(messages.slice(-2)).toMatchObject([
+    { role: "user", content: "Reminder: drink tea" },
+    { role: "assistant", content: [{ type: "text", text: "Time to drink tea." }] },
+  ]);
+  expect(harness.wake().at).toBeUndefined();
+  await harness.close(context);
+});
