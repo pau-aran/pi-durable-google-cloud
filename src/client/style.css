@@ -1,1 +1,140 @@
-/* STUB. The design-system worker replaces this file. */
+/* SKELETON: the tokens and the base rules of p2 (apps/p2/src/web/style.css). The design-system worker completes this file. */
+:root {
+	color-scheme: light;
+	--bg: #fbfaf8;
+	--text: #1d1b19;
+	--muted: #77716a;
+	--faint: #938d86; /* 3:1 on --bg: placeholders and tertiary labels stay legible */
+	--line: #e7e4df;
+	--hover: #f1eee9;
+	--user: #f0ede8;
+	--code: #f5f3f0;
+	--scrollbar: #b8b2aa;
+	--ok: #2f9e6a;
+	--unread: #2f7de1;
+	--working: #e8820c;
+	--bad: #c8433d;
+	--add: #e3f6ea;
+	--add-ink: #1f7a4b;
+	--del: #fde7e6;
+	--del-ink: #b03a35;
+	--scrim: rgb(0 0 0 / 0.2);
+
+	--x: 16px;
+	--s1: 4px;
+	--s2: 8px;
+	--s3: 12px;
+	--s4: 16px;
+	--s5: 24px;
+	--bar: 52px;
+	--bar-pad: 6px; /* 40px icon target + 6px puts a 20px glyph's box on the inset */
+	--row: 44px;
+	--control: 40px;
+	--control-sm: 32px;
+	--radius: 4px;
+
+	--fs-xs: 11px;
+	--fs-sm: 13px;
+	--fs-md: 15px;
+	--fs-lg: 17px;
+	--fs-code: 12px;
+	--fw-medium: 500;
+	--fw-strong: 600;
+	--sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+	--mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
+
+	--safe-top: env(safe-area-inset-top, 0px);
+	--safe-bottom: env(safe-area-inset-bottom, 0px);
+	/* The transcript and the composer under it: centred, at most Elanor's width for running text. */
+	--chat-width: var(--semantic-dimension-size-max-width-text);
+	--chat-size: 100%;
+
+	font-family: var(--sans);
+	font-size: 16px;
+	line-height: 1.5;
+	-webkit-text-size-adjust: 100%;
+	text-size-adjust: 100%;
+	background: var(--bg);
+	color: var(--text);
+	-webkit-font-smoothing: antialiased;
+	-webkit-tap-highlight-color: transparent;
+	/* Checkboxes, radios and ranges in the interface's ink, not the browser's blue. */
+	accent-color: var(--text);
+}
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	--bg: #151413;
+	--text: #ecebe8;
+	--unread: #5b9cf0;
+	--working: #f59e42;
+	--muted: #9b958d;
+	--faint: #6c6761;
+	--line: #2c2a27;
+	--hover: #22201e;
+	--user: #252321;
+	--code: #1a1918;
+	--scrollbar: #595550;
+	--ok: #5cc493;
+	--bad: #f07a72;
+	--add: #17301f;
+	--add-ink: #7fd8a3;
+	--del: #3a1d1b;
+	--del-ink: #f4a19a;
+	--scrim: rgb(0 0 0 / 0.45);
+}
+@media (min-width: 700px) {
+	:root {
+		--chat-size: calc(100% - 56px);
+	}
+}
+
+/* Base */
+/* One scrollbar look everywhere (code blocks, tables, sheets, logs), not the platform's thick default. */
+* {
+	box-sizing: border-box;
+	scrollbar-width: thin;
+	scrollbar-color: var(--scrollbar) transparent;
+}
+html,
+body,
+#root {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	overscroll-behavior: none;
+}
+/* Element resets in a layer below Elanor's (elanor.css): its components style their own elements. */
+@layer p2-reset {
+	button,
+	input,
+	textarea,
+	select {
+		font: inherit;
+		color: inherit;
+	}
+	button {
+		cursor: pointer;
+		background: none;
+		border: 0;
+		padding: 0;
+		text-align: inherit;
+	}
+	button:disabled {
+		cursor: default;
+		opacity: 0.45;
+	}
+	h1,
+	h2,
+	h3,
+	p,
+	figure {
+		margin: 0;
+	}
+	a {
+		color: inherit;
+		text-underline-offset: 3px;
+	}
+}
+:focus-visible {
+	outline: 1px solid var(--text);
+	outline-offset: 2px;
