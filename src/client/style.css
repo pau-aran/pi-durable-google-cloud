@@ -12,14 +12,8 @@
 	--code: #f5f3f0;
 	--scrollbar: #b8b2aa;
 	--ok: #2f9e6a;
-	--unread: #2f7de1;
-	--working: #e8820c;
 	--bad: #c8433d;
-	--add: #e3f6ea;
-	--add-ink: #1f7a4b;
-	--del: #fde7e6;
 	--del-ink: #b03a35;
-	--scrim: rgb(0 0 0 / 0.2);
 
 	--x: 16px;
 	--s1: 4px;
@@ -37,9 +31,7 @@
 	--fs-xs: 11px;
 	--fs-sm: 13px;
 	--fs-md: 15px;
-	--fs-lg: 17px;
 	--fs-code: 12px;
-	--fw-medium: 500;
 	--fw-strong: 600;
 	--sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
 	--mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, monospace;
@@ -66,8 +58,6 @@
 	color-scheme: dark;
 	--bg: #151413;
 	--text: #ecebe8;
-	--unread: #5b9cf0;
-	--working: #f59e42;
 	--muted: #9b958d;
 	--faint: #6c6761;
 	--line: #2c2a27;
@@ -77,11 +67,7 @@
 	--scrollbar: #595550;
 	--ok: #5cc493;
 	--bad: #f07a72;
-	--add: #17301f;
-	--add-ink: #7fd8a3;
-	--del: #3a1d1b;
 	--del-ink: #f4a19a;
-	--scrim: rgb(0 0 0 / 0.45);
 }
 @media (min-width: 700px) {
 	:root {
@@ -351,10 +337,6 @@ body,
 	width: 32px;
 	height: 32px;
 }
-.pi-logo.compact {
-	width: 24px;
-	height: 24px;
-}
 .pi-logo-coral {
 	fill: rgb(228 138 122);
 }
@@ -395,11 +377,6 @@ body,
 @keyframes spin {
 	to {
 		transform: rotate(360deg);
-	}
-}
-@keyframes pulse {
-	50% {
-		opacity: 0.35;
 	}
 }
 @keyframes rise {

@@ -19,24 +19,14 @@ function Icon({ children, size = 20 }: { children: ReactNode; size?: number }) {
   );
 }
 
-export const PlusIcon = ({ size }: { size?: number }) => (
-  <Icon size={size}>
+export const PlusIcon = () => (
+  <Icon>
     <path d="M12 5v14M5 12h14" />
   </Icon>
 );
 export const SendIcon = () => (
   <Icon>
     <path d="M12 19V5M5 12l7-7 7 7" />
-  </Icon>
-);
-export const CloseIcon = () => (
-  <Icon>
-    <path d="M6 6l12 12M18 6L6 18" />
-  </Icon>
-);
-export const ChevronIcon = ({ size = 16 }: { size?: number }) => (
-  <Icon size={size}>
-    <path d="M9 6l6 6-6 6" />
   </Icon>
 );
 export const DownIcon = () => (
@@ -47,12 +37,6 @@ export const DownIcon = () => (
 export const CheckIcon = () => (
   <Icon size={14}>
     <path d="M5 12l5 5 9-10" />
-  </Icon>
-);
-export const AlertIcon = () => (
-  <Icon size={14}>
-    <path d="M12 8v5M12 17h.01" />
-    <circle cx="12" cy="12" r="9" />
   </Icon>
 );
 export const CopyIcon = () => (

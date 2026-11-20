@@ -1,7 +1,7 @@
 // From p2 (apps/p2/src/web/PiLogo.tsx).
-export function PiLogo({ compact = false }: { compact?: boolean }) {
+export function PiLogo() {
   return (
-    <svg className={`pi-logo ${compact ? "compact" : ""}`} viewBox="0 0 4 4" role="img" aria-label="Pi">
+    <svg className="pi-logo" viewBox="0 0 4 4" role="img" aria-label="Pi">
       <title>Pi</title>
       <rect className="pi-logo-coral" width="3" height="1" />
       <rect className="pi-logo-coral" x="2" y="1" width="1" height="1" />
