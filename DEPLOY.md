@@ -61,7 +61,11 @@ One GKE Autopilot pod runs the application. Its session files are on a Persisten
   kubectl describe managedcertificate pi-durable
   ```
 
-- Open `https://` and the domain in a browser.
+- Open `https://` and the domain in a browser. An `http://` address redirects to it.
+
+  ```sh
+  curl -sI http://chat.example.com  # 301, Location: https://...
+  ```
 
 ## Update to a new image
 

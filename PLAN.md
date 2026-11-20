@@ -87,7 +87,8 @@ A test confirmed the rule: two sessions with sleeping tasks were closed, and a n
 | Service | Port 8080, with the `BackendConfig` annotation. |
 | BackendConfig | `timeoutSec: 86400`. The default of 30 s is the longest life of a WebSocket through the load balancer. |
 | ManagedCertificate | The certificate of the domain. The browser needs HTTPS for `crypto.randomUUID()`. |
-| Ingress | The external Application Load Balancer. |
+| FrontendConfig | `redirectToHttps`: an HTTP request gets a redirect to HTTPS. |
+| Ingress | The external Application Load Balancer, with the `ManagedCertificate` and `FrontendConfig` annotations. |
 
 ```sh
 gcloud container clusters create-auto pi-durable --region us-central1
