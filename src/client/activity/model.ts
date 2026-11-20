@@ -1,6 +1,5 @@
 // Adapted from p2 (apps/p2/src/web/activity/model.ts), at p2's default detail (2): the agent's texts show in the
-// transcript, its thinking and tool calls on a wheel between them. CONTRACT: the exported types and the signature of
-// `chatItems` are shared by the transcript and the activity.
+// transcript, its thinking and tool calls on a wheel between them.
 //
 // A turn's activity: what the agent did between a person's message and its answer. Derived from the transcript's
 // items: `chatItems` keeps each response's text in the transcript, in its order, and turns each stretch of tool calls
