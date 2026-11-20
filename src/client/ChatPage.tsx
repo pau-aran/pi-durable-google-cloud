@@ -123,7 +123,7 @@ export function ChatPage({ sessionId }: { sessionId: string }) {
   // `result`, so a prompt is shown by the server once the view has an entry newer than any before it was sent, or
   // lists its text as queued.
   const sentAfter = useRef(new Map<string, number>()).current;
-  // A new snapshot follows each change of the unanswered prompts.
+  // A new snapshot follows each change of the unanswered prompts; the list is the same array until then.
   const unanswered = useMemo(() => state.unanswered(), [state, snapshot]);
   useEffect(() => {
     sessionStorage.setItem(unansweredKey(sessionId), JSON.stringify(unanswered));
@@ -145,7 +145,8 @@ export function ChatPage({ sessionId }: { sessionId: string }) {
   }, [transcript, pending, busy]);
 
   const follow = useFollow(shown, () => {
-    if (state.snapshot.earlier === "more") void state.loadEarlier();
+    // Without a ready socket the load fails at once: the first `view` of the next one asks again.
+    if (ready.current && state.snapshot.earlier === "more") void state.loadEarlier();
   });
 
   return (
