@@ -1,5 +1,6 @@
 # Edit exactly two values before you apply this file: the image and the domain.
 # Each one is marked with "# EDIT".
+# For Gemini on Vertex AI instead of OpenAI, also set MODEL_PROVIDER to "google-vertex".
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -25,11 +26,21 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: MODEL_PROVIDER
+              value: openai # "openai" or "google-vertex"
+            # The Secret holds the key of the provider you use, so each key is optional.
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: openai
                   key: OPENAI_API_KEY
+                  optional: true
+            - name: GOOGLE_CLOUD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai
+                  key: GOOGLE_CLOUD_API_KEY
+                  optional: true
           readinessProbe:
             httpGet:
               path: /healthz

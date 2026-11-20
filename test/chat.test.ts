@@ -17,6 +17,26 @@ test("the root conversation gets an OpenAI model and only the remind tool", asyn
   await harness.close(context);
 });
 
+test("MODEL_PROVIDER=google-vertex gives the root conversation a Gemini model on Vertex AI", async () => {
+  const env = { MODEL_PROVIDER: "google-vertex", GOOGLE_CLOUD_API_KEY: "test-key" };
+  const harness = await Harness.open(new MemoryStorage(), createChatHarnessOptions(env), context);
+  const agent = await (await harness.root(context)).agent(context);
+  expect(agent.model).toMatchObject({ provider: "google-vertex", modelId: "gemini-4-argon" });
+  await harness.close(context);
+});
+
+test("MODEL_ID overrides the provider's model", async () => {
+  const harness = await Harness.open(new MemoryStorage(), createChatHarnessOptions({ MODEL_ID: "gpt-6.1-terra" }), context);
+  const agent = await (await harness.root(context)).agent(context);
+  expect(agent.model).toMatchObject({ provider: "openai", modelId: "gpt-6.1-terra" });
+  await harness.close(context);
+});
+
+test("an unknown MODEL_PROVIDER or a missing Vertex key stops the start", () => {
+  expect(() => createChatHarnessOptions({ MODEL_PROVIDER: "gemini" })).toThrow('MODEL_PROVIDER is "gemini"');
+  expect(() => createChatHarnessOptions({ MODEL_PROVIDER: "google-vertex" })).toThrow("GOOGLE_CLOUD_API_KEY is not set");
+});
+
 test("remind delivers its text as a new input after the delay, across a restart", async () => {
   const faux = fauxProvider();
   const models = createModels();

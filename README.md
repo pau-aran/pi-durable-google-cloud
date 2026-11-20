@@ -30,6 +30,15 @@ Add your key to `.env`:
 OPENAI_API_KEY=your-key
 ```
 
+To use Gemini on Vertex AI instead, set these two values. The API key does not need a project or a location.
+
+```dotenv
+MODEL_PROVIDER=google-vertex
+GOOGLE_CLOUD_API_KEY=your-key
+```
+
+`MODEL_ID` sets a model other than the default, `gpt-6.1-sol` or `gemini-4-argon`.
+
 Then build the client and start the server:
 
 ```sh
@@ -107,7 +116,7 @@ pnpm build      # production build of the client
 
 ## Deploy
 
-[`deploy.yaml`](deploy.yaml) holds every Kubernetes object. You change two values in it, the image and the domain, both marked `# EDIT`. [`DEPLOY.md`](DEPLOY.md) has the steps: create a GKE Autopilot cluster, build the image, create the Secret with the API key, apply the manifest, and point your DNS record at the load balancer.
+[`deploy.yaml`](deploy.yaml) holds every Kubernetes object. You change two values in it, the image and the domain, both marked `# EDIT`. For Gemini on Vertex AI, you also set `MODEL_PROVIDER` to `google-vertex`. [`DEPLOY.md`](DEPLOY.md) has the steps: create a GKE Autopilot cluster, build the image, create the Secret with the API key, apply the manifest, and point your DNS record at the load balancer.
 
 Before you expose a deployment, add authentication, authorization, and rate limiting. Anyone who can reach this sample can create sessions that use your model key.
 
