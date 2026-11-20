@@ -283,11 +283,6 @@ body,
 	overscroll-behavior: contain;
 	-webkit-overflow-scrolling: touch;
 }
-/* The chat transcript keeps the reader's place with the browser's scroll anchoring, counting from the top: content
-   arriving below the reader moves nothing. */
-.scroller.transcript {
-	overflow-anchor: auto;
-}
 .scroller::-webkit-scrollbar {
 	width: 4px;
 	height: 4px;
