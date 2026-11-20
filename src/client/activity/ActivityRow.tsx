@@ -2,7 +2,7 @@
 // A block's compact activity wheel in the transcript. The wheel opens this block's steps in place, below it.
 import { type MouseEvent, type ReactNode, useEffect, useState } from "react";
 import { Ticker } from "../elanor-extra/ticker.tsx";
-import { CheckIcon, ChevronIcon, SparkIcon } from "./icons.tsx";
+import { AlertIcon, CheckIcon, ChevronIcon, SparkIcon } from "./icons.tsx";
 import { KindIcon, LabelText } from "./Label.tsx";
 import { elapsed, live, plain, type Step, summary, type WheelEntry } from "./model.ts";
 import { StepList } from "./StepList.tsx";
@@ -53,7 +53,7 @@ export function ActivityRow({
   const [selected, setSelected] = useState(false);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
   const thought = entries.some((entry) => entry.kind === "thought");
-  // "Thought, set a reminder": with thinking on the wheel, its summary says so first.
+  // "Thought, set a reminder": with thinking on the wheel, its summary says so first. Failures are counted at its end.
   const calls = steps.length ? summary(steps) : "";
   const done = thought
     ? ["Thought", calls.charAt(0).toLowerCase() + calls.slice(1)].filter(Boolean).join(", ")
@@ -118,13 +118,16 @@ export function ActivityRow({
         </div>
       </div>
     );
+  // Every call failed: the summary is a failure too, not a check.
+  const failed = steps.length > 0 && steps.every((step) => step.status === "error");
   if (!working)
     faces.push({
       key: "done",
       label: done,
+      failed,
       content: (
         <>
-          <CheckIcon />
+          {failed ? <AlertIcon /> : <CheckIcon />}
           <span className="label-text">
             {done}
             <span className="label-extra">

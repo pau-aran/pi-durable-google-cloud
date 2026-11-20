@@ -7,4 +7,5 @@ export {
   BuildIcon as ToolIcon,
   CheckIcon,
   ChevronRightIcon as ChevronIcon,
+  ErrorIcon as AlertIcon,
 } from "@earendil-works/elanor-icons-react";
