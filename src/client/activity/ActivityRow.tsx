@@ -43,8 +43,6 @@ export function ActivityRow({
   startedAt,
   endedAt,
 }: {
-  /** The row's key in the transcript. */
-  rowKey: string;
   steps: readonly Step[];
   /** Everything on the wheel in order: thinking among the calls. Default: the steps. */
   entries?: readonly WheelEntry[];

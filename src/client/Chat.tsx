@@ -88,7 +88,6 @@ const ItemView = memo(function ItemView({ item }: { item: Exclude<ChatItem, { ty
     case "activity":
       return (
         <ActivityRow
-          rowKey={item.key}
           steps={item.steps}
           entries={item.entries}
           working={item.working}
