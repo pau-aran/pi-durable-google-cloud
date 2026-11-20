@@ -26,6 +26,9 @@
 	flex-direction: column;
 	padding-top: var(--s1);
 	border-top: 1px solid var(--line);
+	/* Many follow-ups scroll in their own list: the dock must not grow over the transcript. About four rows show. */
+	max-height: calc(4.5 * var(--row));
+	overflow-y: auto;
 }
 .queued + .composer {
 	padding-top: var(--s1);
@@ -33,6 +36,7 @@
 }
 .queued > div {
 	display: flex;
+	flex: none;
 	align-items: center;
 	gap: var(--s2);
 	min-height: var(--control-sm);
@@ -131,12 +135,6 @@
 	background: var(--bg);
 	translate: -50% 0;
 	animation: rise 0.2s ease-out;
-}
-@keyframes rise {
-	from {
-		opacity: 0;
-		transform: translateY(6px);
-	}
 }
 @media (prefers-reduced-motion: reduce) {
 	.to-bottom {
