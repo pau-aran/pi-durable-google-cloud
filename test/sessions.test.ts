@@ -433,6 +433,13 @@ test("an entries request returns the entries before the view's window", async ()
   expect(answer.entries[0]!.id).toBe(view.before);
   expect(answer.entries.length + view.entries.length).toBe(2 * turns);
   expect(JSON.stringify(answer.entries.at(-1))).toContain("Question 0");
+
+  // A gap is filled oldest first, from the entry after its start.
+  browser.send({ type: "entries", requestId: "e2", minEntryId: answer.entries.at(-1)!.id + 1, order: "ascending", limit: 2 });
+  await browser.until(() => browser.frames.length > 2);
+
+  const page = browser.frames[2] as Extract<ServerMessage, { type: "entries" }>;
+  expect(page.entries.map((entry) => entry.id)).toEqual([answer.entries.at(-2)!.id, answer.entries.at(-3)!.id]);
 });
 
 test("an entries request with a limit out of range closes the socket", async () => {
