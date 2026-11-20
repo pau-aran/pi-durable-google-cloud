@@ -1,9 +1,42 @@
 <!doctype html>
+<!-- Adapted from p2 (the page template in apps/p2/src/hosts/web.ts). -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfaf8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151413" />
     <title>pi-durable chat</title>
+    <!-- The inline style and theme script run before any CSS so the first paint has the right background, by
+         src/client/theme.ts's rule; the stylesheets follow them, so their rules win. -->
+    <style>
+      :root {
+        color-scheme: light;
+        background: #fbfaf8;
+      }
+      :root[data-theme="dark"] {
+        color-scheme: dark;
+        background: #151413;
+      }
+    </style>
+    <script>
+      {
+        let theme;
+        try {
+          theme = localStorage.getItem("pi-theme");
+        } catch {}
+        document.documentElement.dataset.theme = document.documentElement.dataset.colorScheme =
+          theme === "light" || theme === "dark"
+            ? theme
+            : matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
