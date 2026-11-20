@@ -288,6 +288,9 @@ body,
 
 /* Transcript */
 .scroller {
+	/* The containing block of what is positioned inside (the wheels' announcements for screen readers): it scrolls and
+	   is clipped with the transcript, and does not make the page behind it scrollable. */
+	position: relative;
 	flex: 1;
 	overflow-y: auto;
 	overflow-anchor: none;
