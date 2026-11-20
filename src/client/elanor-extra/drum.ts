@@ -49,8 +49,6 @@ function band(position: number, last: number): number {
 
 type Drag = { y: number; start: number; moved: boolean; samples: { time: number; position: number }[] };
 
-export type Drum = ReturnType<typeof createDrum>;
-
 /** Creates a drum resting on item `initial`; `onMove` receives each new position. */
 export function createDrum(initial: number, onMove: (position: number) => void) {
   let at = initial;
