@@ -1,13 +1,14 @@
 // Adapted from p2 (apps/p2/src/hosts/web/main.tsx, src/web/AppLayout.tsx and src/web/app-boundary.tsx): the page's
 // start. `/s/<session id>` is the chat, every other path the landing page.
+// The stylesheets first: elanor.css declares the cascade layers' order before any component's CSS names a layer.
+import "./elanor.css";
+import "./style.css";
 import { Component, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { SESSION_ID_PATTERN } from "../protocol.ts";
 import { ChatPage } from "./ChatPage.tsx";
 import { Home } from "./Home.tsx";
 import { startTheme } from "./theme.ts";
-import "./elanor.css";
-import "./style.css";
 
 /** The app's root boundary: a failure anywhere shows itself with a way out, instead of an empty page. */
 class AppBoundary extends Component<{ children: ReactNode }, { error?: unknown }> {

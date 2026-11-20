@@ -4,7 +4,7 @@ import { ThemeButton } from "./ThemeButton.tsx";
 
 /**
  * The bar above the chat and the landing page. `offline`: the socket is down. Without a `title` it is the landing
- * page's bar, which has no link to itself.
+ * page's bar, which has no heading and no link to itself.
  */
 export function TopBar({ title, offline = false }: { title?: string; offline?: boolean }) {
   return (
@@ -14,9 +14,7 @@ export function TopBar({ title, offline = false }: { title?: string; offline?: b
           <PlusIcon />
         </a>
       )}
-      <div className="title">
-        <h1>{title}</h1>
-      </div>
+      <div className="title">{title !== undefined && <h1>{title}</h1>}</div>
       {offline && <span className="offline">Offline</span>}
       <ThemeButton />
     </header>
