@@ -205,9 +205,9 @@ describe("a step's words", () => {
     expect(live(step(fetch, "running"))).toEqual(describeStep(step(fetch, "done")));
   });
 
-  it("summarises one and several reminders, and an unknown tool by name", () => {
+  it("summarises one and several reminders, an unknown tool by name, and counts the failures", () => {
     expect(summary([step(remind("a"), "done")])).toBe("Set a reminder");
-    expect(summary([step(remind("a"), "done"), step(remind("b"), "error")])).toBe("Set 2 reminders");
+    expect(summary([step(remind("a"), "done"), step(remind("b"), "error")])).toBe("Set 2 reminders · 1 failed");
     const grep = step(tool("g", "grep", {}), "done");
     expect(summary([grep])).toBe("Used grep");
     expect(summary([step(remind("a"), "done"), grep, grep])).toBe("Set a reminder, used grep 2 times");

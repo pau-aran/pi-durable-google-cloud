@@ -427,7 +427,7 @@ const usedTool = (name: string) => (count: number) => (count === 1 ? `used ${nam
 
 /**
  * One line for a finished run of calls: the tools' own words for what they did, counted, in the order they did it
- * ("Set 2 reminders, used web_fetch"). Its failures show on the wheel, not here.
+ * ("Set 2 reminders, used web_fetch"), then how many failed ("Set 2 reminders · 1 failed").
  */
 export function summary(steps: readonly Step[]): string {
   // Keyed by the words' function (tools sharing it count together), or by the name of a tool without one.
@@ -440,5 +440,6 @@ export function summary(steps: readonly Step[]): string {
     counts.set(key, entry);
   }
   const parts = [...counts.values()].map(({ words, count }) => words(count));
-  return capitalized(parts.join(", ") || "done");
+  const errors = steps.filter((step) => step.status === "error").length;
+  return `${capitalized(parts.join(", ") || "done")}${errors ? ` · ${errors} failed` : ""}`;
 }
