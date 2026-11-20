@@ -132,6 +132,7 @@ export function keepConnected(options: ReconnectOptions): { stop(): void } {
 
 /**
  * The page's environment: wakes on `online`, visibility, network changes (where reported) and back/forward restores.
+ * A wake only runs a waiting retry at once (`keepConnected`).
  * Logs go to the console under `name`.
  */
 export function browserEnvironment(name: string): ReconnectEnvironment {
@@ -149,7 +150,8 @@ export function browserEnvironment(name: string): ReconnectEnvironment {
       const visibility = () => {
         if (document.visibilityState === "visible") listener();
       };
-      // Chromium only: Wi-Fi to cellular and back, which leaves the old socket dead without telling anyone.
+      // Chromium only: Wi-Fi to cellular and back. Only a retry that waits gains from it: an open socket that the
+      // change left dead is not noticed until the browser reports its close (this server sends no pings).
       const network = (navigator as { connection?: EventTarget }).connection;
       window.addEventListener("online", listener);
       window.addEventListener("pageshow", pageshow);
