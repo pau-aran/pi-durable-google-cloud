@@ -41,6 +41,7 @@ One pod serves the page, the API, and the sockets. More pods need a router and a
 - `POST /api/sessions` returns `201 {"sessionId": "<uuid>"}`.
 - `GET /api/sessions/<uuid>` with `Upgrade: websocket` attaches the socket to that session.
 - `GET /healthz` returns `200`.
+- Each other `GET` under `/api/` returns `404`.
 - Each other `GET` serves a file from `dist/`, or `dist/index.html`. The page of a session is `/s/<uuid>`.
 
 The server rejects a session id that does not match `SESSION_ID_PATTERN`, because the id becomes a file name.
