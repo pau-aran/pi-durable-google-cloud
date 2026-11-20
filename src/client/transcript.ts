@@ -14,7 +14,7 @@ import type {
 import { gapKey } from "./state.ts";
 
 /** The display status of a tool call, joined with its live slot and result entry. */
-export type ToolStatus = "pending" | "running" | "done" | "error" | "interrupted";
+type ToolStatus = "pending" | "running" | "done" | "error" | "interrupted";
 
 /** One tool call, joined with its live slot and its result entry. */
 export type ToolView = {

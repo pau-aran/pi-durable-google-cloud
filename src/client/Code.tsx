@@ -41,7 +41,7 @@ export function highlightCode(code: string, hint: string | undefined): ReactNode
 }
 
 /** Copy plain text, falling back to the legacy clipboard API when needed. */
-export async function copyText(text: string): Promise<boolean> {
+async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
@@ -84,16 +84,9 @@ export function CopyButton({ text, label }: { text: string; label?: string }) {
   );
 }
 
-/** Highlighted code, with Copy unless it is embedded as tool input. */
-export function CodeBlock({ code, language, tool }: { code: string; language?: string; tool?: boolean }) {
+/** Highlighted code with a language label and Copy. */
+export function CodeBlock({ code, language }: { code: string; language?: string }) {
   const content = useMemo(() => highlightCode(code, language), [code, language]);
-  if (tool) {
-    return (
-      <pre className="code hljs">
-        <code>{content}</code>
-      </pre>
-    );
-  }
   return (
     <div className="code-block">
       <div className="code-head">
