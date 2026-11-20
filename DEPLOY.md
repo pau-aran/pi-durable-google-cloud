@@ -8,7 +8,7 @@ One GKE Autopilot pod runs the application. Its session files are on a Persisten
 - `gcloud`, signed in (`gcloud auth login`).
 - `kubectl`.
 - A domain whose DNS records you can change.
-- An OpenAI API key in `OPENAI_API_KEY`.
+- An OpenAI API key in `OPENAI_API_KEY`. To use Gemini on Vertex AI instead, a [Google Cloud API key for Vertex AI](https://cloud.google.com/vertex-ai/generative-ai/docs/start/api-keys) in `GOOGLE_CLOUD_API_KEY`.
 
 ## Deploy
 
@@ -19,6 +19,12 @@ One GKE Autopilot pod runs the application. Its session files are on a Persisten
    gcloud services enable container.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com
    ```
 
+   For Gemini, also enable the Vertex AI API in the project of your API key:
+
+   ```sh
+   gcloud services enable aiplatform.googleapis.com
+   ```
+
 2. Create the cluster and the image repository, then build the image:
 
    ```sh
@@ -27,7 +33,7 @@ One GKE Autopilot pod runs the application. Its session files are on a Persisten
    gcloud builds submit --tag us-central1-docker.pkg.dev/PROJECT/pi-durable/app
    ```
 
-3. In `deploy.yaml`, change the two values marked `# EDIT`: the image and the domain.
+3. In `deploy.yaml`, change the two values marked `# EDIT`: the image and the domain. For Gemini, also change the value of `MODEL_PROVIDER` from `openai` to `google-vertex`.
 
 4. Create the Secret and apply the manifest:
 
@@ -35,6 +41,16 @@ One GKE Autopilot pod runs the application. Its session files are on a Persisten
    kubectl create secret generic openai --from-literal=OPENAI_API_KEY="$OPENAI_API_KEY"
    kubectl apply -f deploy.yaml
    ```
+
+   For Gemini, put the Google key in the same Secret instead:
+
+   ```sh
+   kubectl create secret generic openai --from-literal=GOOGLE_CLOUD_API_KEY="$GOOGLE_CLOUD_API_KEY"
+   ```
+
+   The application uses the default model of the provider, `gpt-6.1-sol` or `gemini-4-argon`. To use a different model, add a `MODEL_ID` entry to `env` in `deploy.yaml`.
+
+   If `MODEL_PROVIDER` is `google-vertex` and the Secret has no `GOOGLE_CLOUD_API_KEY`, the server stops at startup and `kubectl logs pi-durable-0` shows the cause.
 
 ## Set DNS
 
