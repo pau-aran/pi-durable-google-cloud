@@ -1,12 +1,108 @@
-// STUB of p2's apps/p2/src/web/Code.tsx. CONTRACT: `CodeBlock({ code, language })` and `CopyButton({ text })`.
-export function CopyButton({ text }: { text: string }) {
+// Adapted from p2 (apps/p2/src/web/Code.tsx).
+import { common, createLowlight } from "lowlight";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { CheckIcon, CopyIcon } from "./icons.tsx";
+import "./transcript.css";
+
+const lowlight = createLowlight(common);
+const ALIASES: Record<string, string> = { mjs: "js", cjs: "js", mts: "ts", cts: "ts", jsonc: "json", zsh: "bash" };
+
+/** Highlight.js language for a fence info string or a file path, if registered. */
+function languageOf(hint: string | undefined): string | undefined {
+  if (!hint) return undefined;
+  const name = hint.toLowerCase().split(/[\s{]/)[0]?.split(/[/\\]/).pop() ?? "";
+  const key = name.includes(".") ? (name.split(".").pop() ?? "") : name;
+  const language = ALIASES[key] ?? key;
+  return language && lowlight.registered(language) ? language : undefined;
+}
+
+type HighlightNode = ReturnType<typeof lowlight.highlight>["children"][number];
+
+function render(nodes: readonly HighlightNode[], key: string): ReactNode[] {
+  return nodes.map((node, index) => {
+    if (node.type === "text") return node.value;
+    if (node.type !== "element") return null;
+    const id = `${key}.${index}`;
+    const className = Array.isArray(node.properties.className) ? node.properties.className.join(" ") : undefined;
+    return <span key={id} className={className}>{render(node.children, id)}</span>;
+  });
+}
+
+/** Code highlighted for a fence info string or a file name, as React elements (plain text when not known). */
+export function highlightCode(code: string, hint: string | undefined): ReactNode {
+  const language = languageOf(hint);
+  if (!language || code.length > 100_000) return code;
+  // Rendered as React elements from lowlight's tree: never as HTML.
+  try {
+    return render(lowlight.highlight(language, code).children, "h");
+  } catch {
+    return code;
+  }
+}
+
+/** Copy plain text, falling back to the legacy clipboard API when needed. */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Clipboard API unavailable (insecure context, permissions): legacy fallback.
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.append(area);
+    area.select();
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      area.remove();
+    }
+  }
+}
+
+/** Copy a message or code block, showing feedback on success. */
+export function CopyButton({ text, label }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
   return (
-    <button type="button" className="copy" aria-label="Copy" onClick={() => void navigator.clipboard.writeText(text)}>
-      Copy
+    <button
+      type="button"
+      className={`copy${copied ? " done" : ""}`}
+      aria-label={copied ? "Copied" : "Copy"}
+      onClick={() => void copyText(text).then(setCopied)}
+    >
+      {copied ? <CheckIcon /> : <CopyIcon />}
+      {label && <span>{copied ? "Copied" : label}</span>}
     </button>
   );
 }
 
-export function CodeBlock({ code }: { code: string; language?: string }) {
-  return <pre>{code}</pre>;
+/** Highlighted code, with Copy unless it is embedded as tool input. */
+export function CodeBlock({ code, language, tool }: { code: string; language?: string; tool?: boolean }) {
+  const content = useMemo(() => highlightCode(code, language), [code, language]);
+  if (tool) {
+    return (
+      <pre className="code hljs">
+        <code>{content}</code>
+      </pre>
+    );
+  }
+  return (
+    <div className="code-block">
+      <div className="code-head">
+        <span>{language || "text"}</span>
+        <CopyButton text={code} label="Copy" />
+      </div>
+      <pre className="hljs">
+        <code>{content}</code>
+      </pre>
+    </div>
+  );
 }

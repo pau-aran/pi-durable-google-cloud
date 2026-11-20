@@ -1,0 +1,273 @@
+/* Adapted from p2 (apps/p2/src/web/style.css). */
+
+/* Each row carries its spacing as padding: a turn starts --s5 below what came before; its parts follow --s2 apart. */
+.rows {
+  display: flow-root;
+}
+.row {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--s5);
+}
+.row[data-gap="step"] {
+  padding-top: var(--s2);
+}
+/* A turn's first part is at least one row tall, as the working wheel it replaces: the turn never shrinks. */
+.row[data-lead] > * {
+  min-height: var(--row);
+}
+/* A transcript appearing (opening a conversation) fades in rather than snapping in (`.messages`). */
+@keyframes transcript-appear {
+  from {
+    opacity: 0;
+  }
+}
+/* A message arriving at the end of the transcript fades in and rises a little (Chat.tsx `useArriving`; several at once
+   one after another). Opacity and transform only: no layout changes, so the reader's place and the measured row heights
+   stay as they are. */
+@keyframes row-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.row.arriving {
+  animation: row-arrive 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .row.arriving {
+    animation: none;
+  }
+}
+.row.first {
+  padding-top: 0;
+}
+.messages {
+  display: flex;
+  flex-direction: column;
+  animation: transcript-appear 0.18s ease-out;
+  gap: var(--s4);
+  width: var(--chat-size);
+  max-width: var(--chat-width);
+  margin: 0 auto;
+  padding: var(--s5) var(--x);
+}
+@media (prefers-reduced-motion: reduce) {
+  .messages {
+    animation: none;
+  }
+}
+
+/* A person's message: the bubble, with its time and Copy below at its right edge. */
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-left: 12%;
+}
+.user-line {
+  display: flex;
+  justify-content: flex-end;
+  max-width: 100%;
+}
+.bubble {
+  max-width: 100%;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius);
+  background: var(--user);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.assistant {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.message-actions {
+  display: flex;
+  align-items: center;
+  margin: calc(-1 * var(--s2)) 0 0 calc(-1 * var(--s2));
+}
+.user .message-actions {
+  margin: 0 calc(-1 * var(--s2)) 0 0;
+}
+/* When a message was sent or an answer began: as quiet as the actions beside it. */
+.message-time {
+  padding: 0 var(--s2);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.copy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  min-height: var(--control-sm);
+  padding: 0 var(--s2);
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.copy:hover {
+  color: var(--text);
+}
+.copy.done {
+  color: var(--ok);
+}
+.marker {
+  padding: var(--s2) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.marker summary {
+  cursor: pointer;
+  list-style: none;
+}
+.code-block {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--code);
+}
+.code-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 0 var(--s3);
+  border-bottom: 1px solid var(--line);
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+}
+.code-block pre {
+  margin: 0;
+  padding: var(--s3);
+  overflow-x: auto;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  tab-size: 3;
+}
+
+/* highlight.js tokens */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-doctag {
+  color: #b0428a;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute {
+  color: #2b7d4b;
+}
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: #b35a00;
+}
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  color: #2a5fbf;
+}
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+  color: #8a5a00;
+}
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: var(--faint);
+  font-style: italic;
+}
+.hljs-attr,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-property {
+  color: #7a3fb0;
+}
+.hljs-deletion {
+  color: var(--del-ink);
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag,
+[data-theme="dark"] .hljs-built_in,
+[data-theme="dark"] .hljs-doctag {
+  color: #f28fc8;
+}
+[data-theme="dark"] .hljs-string,
+[data-theme="dark"] .hljs-regexp,
+[data-theme="dark"] .hljs-addition,
+[data-theme="dark"] .hljs-attribute {
+  color: #9fd99a;
+}
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal,
+[data-theme="dark"] .hljs-symbol,
+[data-theme="dark"] .hljs-bullet {
+  color: #f5b073;
+}
+[data-theme="dark"] .hljs-title,
+[data-theme="dark"] .hljs-section,
+[data-theme="dark"] .hljs-name {
+  color: #8ab4ff;
+}
+[data-theme="dark"] .hljs-type,
+[data-theme="dark"] .hljs-class .hljs-title,
+[data-theme="dark"] .hljs-title.class_ {
+  color: #f0cf7a;
+}
+[data-theme="dark"] .hljs-attr,
+[data-theme="dark"] .hljs-variable,
+[data-theme="dark"] .hljs-template-variable,
+[data-theme="dark"] .hljs-property {
+  color: #c9a4f5;
+}
+
+/* The loaded history's top edge (Earlier messages, loading, Start of conversation): one height in every state, a
+   spinner that fades in while a page loads. */
+.history-edge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  height: var(--control-sm);
+  color: var(--faint);
+  font-size: var(--fs-xs);
+}
+button.history-edge {
+  width: 100%;
+  color: var(--muted);
+  transition: color 0.3s;
+}
+button.history-edge:hover:not(:disabled) {
+  color: var(--text);
+}
+.history-edge .spinner {
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+/* Loading is shown by the spinner and a dimmer label, not the disabled buttons' fade. */
+button.history-edge:disabled {
+  opacity: 1;
+}
+.history-edge.loading {
+  color: var(--faint);
+}
+.history-edge.loading .spinner {
+  opacity: 1;
+}
