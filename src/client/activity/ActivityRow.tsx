@@ -154,7 +154,6 @@ export function ActivityRow({
           // The face in front opens: a step expanded (the newest too: the Ticker leaves its key out), the summary the
           // block.
           onActivate={(key) => show(key ?? faces.at(-1)?.key)}
-          aria-label={`${faces.at(-1)?.label ?? "Working"}. Show the steps`}
           aria-expanded={selected}
         >
           {faces.map((face) => (
