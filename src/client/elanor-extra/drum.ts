@@ -148,8 +148,9 @@ export function createDrum(initial: number, onMove: (position: number) => void) 
     },
     pointerDown: (event: PointerEvent) => {
       if (event.currentTarget instanceof Element) event.currentTarget.setPointerCapture(event.pointerId);
-      // Catching the drum stops it where it is, as a finger on iOS does.
+      // Catching the drum stops it where it is, as a finger on iOS does: also a wheel's settle that is still to come.
       cancelAnimationFrame(frame);
+      clearTimeout(wheelTimer);
       dragged = false;
       drag = { y: event.clientY, start: at, moved: false, samples: [] };
       interacted();
