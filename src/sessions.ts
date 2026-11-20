@@ -10,6 +10,7 @@ const HEARTBEAT_MS = 60_000;
 
 /** The longest delay of `setTimeout`. */
 const MAX_TIMER_MS = 2 ** 31 - 1;
+const WAKE_RETRY_MS = 1_000;
 
 export type SessionsOptions = {
   /** Holds `sessions/<id>.sqlite` and `wakes.sqlite`. Only this process may write it. */
@@ -44,14 +45,21 @@ export async function openSessions(options: SessionsOptions): Promise<Sessions> 
   wakes.exec("CREATE TABLE IF NOT EXISTS wakes (session_id TEXT PRIMARY KEY, at INTEGER NOT NULL)");
   const sessions = new Map<string, Session>();
   let disarm: (() => void) | undefined;
+  let retrying = false;
   let closed = false;
 
-  /** Arm the one timer for the earliest row. */
-  const schedule = (): void => {
+  const cancelWakeTimer = (): void => {
     disarm?.();
     disarm = undefined;
-    const at = wakes.prepare("SELECT MIN(at) AS at FROM wakes").get()?.at;
-    if (closed || typeof at !== "number") return;
+  };
+
+  /** Arm the one timer for the earliest row, without interrupting a delayed retry. */
+  const schedule = (): void => {
+    if (retrying && !closed) return;
+    cancelWakeTimer();
+    if (closed) return;
+    const at = wakes.prepare("SELECT CAST(MIN(at) AS REAL) AS at FROM wakes").get()?.at;
+    if (typeof at !== "number") return;
     disarm = setTimer(due, Math.min(Math.max(at - now(), 0), MAX_TIMER_MS));
   };
 
@@ -93,16 +101,25 @@ export async function openSessions(options: SessionsOptions): Promise<Sessions> 
 
   function due(): void {
     disarm = undefined;
-    for (const row of wakes.prepare("SELECT session_id FROM wakes WHERE at <= ?").all(now())) {
-      const id = String(row.session_id);
-      const session = sessions.get(id);
-      if (session === undefined) open(id);
-      else {
-        armBeforeOpen(id);
-        session.wake();
+    retrying = false;
+    if (closed) return;
+    try {
+      for (const row of wakes.prepare("SELECT session_id FROM wakes WHERE at <= ?").all(now())) {
+        const id = String(row.session_id);
+        const session = sessions.get(id);
+        if (session === undefined) open(id);
+        else {
+          armBeforeOpen(id);
+          session.wake();
+        }
       }
+      schedule();
+    } catch (error) {
+      process.stderr.write(`${JSON.stringify({ kind: "wake_timer_failed", error: String(error) })}\n`);
+      cancelWakeTimer();
+      retrying = true;
+      disarm = setTimer(due, WAKE_RETRY_MS);
     }
-    schedule();
   }
 
   schedule();
@@ -110,6 +127,7 @@ export async function openSessions(options: SessionsOptions): Promise<Sessions> 
   return {
     async connect(id, socket) {
       for (;;) {
+        if (closed) throw new Error("Sessions are closed");
         const session = sessions.get(id) ?? open(id);
         if (session.attach(socket)) return;
         await session.closed;

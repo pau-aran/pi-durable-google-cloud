@@ -16,6 +16,7 @@ let dataDir: string;
 let server: WebSocketServer;
 /** The sessions that the server attaches new sockets to. */
 let sessions: Sessions;
+let closeSessions: (() => Promise<void>) | undefined;
 /** How many times a session asked for its Harness options: one for each open. */
 let opens: number;
 let faux: ReturnType<typeof fauxProvider>;
@@ -23,6 +24,7 @@ let harness: () => HarnessOptions;
 
 beforeEach(async () => {
   dataDir = mkdtempSync(join(tmpdir(), "sessions-test-"));
+  closeSessions = undefined;
   server = new WebSocketServer({ port: 0 });
   server.on("connection", (socket, request) => void sessions.connect(request.url!.slice(1), socket));
   await new Promise((resolve) => server.once("listening", resolve));
@@ -42,13 +44,14 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await sessions.close();
+  await closeSessions?.();
   await new Promise((resolve) => server.close(resolve));
   rmSync(dataDir, { recursive: true });
 });
 
 async function open(options: Partial<SessionsOptions> = {}): Promise<void> {
   sessions = await openSessions({ dataDir, harness: () => harness(), ...options });
+  closeSessions = sessions.close;
 }
 
 /** A browser: one socket that keeps the view from the `view` and `ops` frames. */
@@ -276,6 +279,112 @@ test("a failed open closes the socket and is tried again at the heartbeat", asyn
   await eventually(() => opens === 1);
   // The open succeeded and found no work, so the session closed and its row is gone.
   await eventually(() => wakeRows().length === 0);
+});
+
+test("an oversized wake arms a timer at boot and shutdown does not query the index", async () => {
+  using wakes = new DatabaseSync(join(dataDir, "wakes.sqlite"));
+  wakes.exec("CREATE TABLE wakes (session_id TEXT PRIMARY KEY, at INTEGER NOT NULL)");
+  wakes.prepare("INSERT INTO wakes VALUES (?, ?)").run(ID, 2n ** 53n + 1n);
+  const delays: number[] = [];
+
+  await open({
+    setTimer: (_callback, delay) => {
+      delays.push(delay);
+      return () => {};
+    },
+  });
+  expect(delays).toEqual([2 ** 31 - 1]);
+
+  // This lock would make a SELECT on the host's connection fail.
+  wakes.exec("BEGIN EXCLUSIVE");
+  await sessions.close();
+  closeSessions = undefined;
+});
+
+test("a failed session commit closes the socket without acknowledging the prompt", async () => {
+  faux.setResponses([fauxAssistantMessage("Recovered.")]);
+  await open();
+  const browser = await connect();
+  await browser.until(() => browser.frames.length > 0);
+  using db = new DatabaseSync(join(dataDir, "sessions", `${ID}.sqlite`));
+  db.exec("CREATE TRIGGER fail_prompt BEFORE INSERT ON entries BEGIN SELECT RAISE(ABORT, 'session write failed'); END");
+  const prompt: ClientMessage = { type: "prompt", requestId: "retry", content: "Hello" };
+
+  browser.send(prompt);
+
+  expect(await browser.closed).toBe(1011);
+  expect(browser.frames.map((frame) => frame.type)).toEqual(["view"]);
+  db.exec("DROP TRIGGER fail_prompt");
+  const retry = await connect();
+  await retry.until(() => retry.frames.length > 0);
+  retry.send(prompt);
+  await retry.shows("Recovered.");
+  expect(retry.frames).toContainEqual({ type: "result", requestId: "retry", ok: true });
+  expect(retry.entries("pi.user")).toHaveLength(1);
+});
+
+test("a failed wake-index update logs once and retries the due row after a delay", async () => {
+  let timer: { callback: () => void; delay: number } | undefined;
+  const now = 100_000;
+  await open({
+    now: () => now,
+    setTimer: (callback, delay) => {
+      timer = { callback, delay };
+      return () => { timer = undefined; };
+    },
+  });
+  using wakes = new DatabaseSync(join(dataDir, "wakes.sqlite"));
+  wakes.prepare("INSERT INTO wakes VALUES (?, ?)").run(ID, now);
+  const browser = await connect("00000000-0000-4000-8000-000000000002");
+  await browser.until(() => browser.frames.length > 0);
+  wakes.exec("CREATE TRIGGER fail_wake BEFORE UPDATE ON wakes BEGIN SELECT RAISE(ABORT, 'wake write failed'); END");
+  expect(timer?.delay).toBe(0);
+  const stderr = process.stderr.write;
+  const lines: string[] = [];
+  process.stderr.write = (line: string) => lines.push(line) > 0;
+  try {
+    timer?.callback();
+  } finally {
+    process.stderr.write = stderr;
+    wakes.exec("DROP TRIGGER fail_wake");
+  }
+
+  expect(lines).toHaveLength(1);
+  expect(lines[0]).toMatch(/^[^\n]+\n$/);
+  expect(JSON.parse(lines.join(""))).toEqual({ kind: "wake_timer_failed", error: "Error: wake write failed" });
+  expect(timer?.delay).toBeGreaterThan(0);
+  expect(timer?.delay).toBeLessThanOrEqual(60_000);
+  timer?.callback();
+  await eventually(() => wakeRows().length === 0);
+  expect(opens).toBe(2);
+});
+
+test("shutdown rejects a connect waiting for the previous Harness to close", async () => {
+  await open();
+  const first = new Promise<WebSocket>((resolve) => server.once("connection", resolve));
+  const browser = await connect();
+  await browser.until(() => browser.frames.length > 0);
+  server.removeAllListeners("connection");
+  const second = new Promise<WebSocket>((resolve) => server.once("connection", resolve));
+  const waiting = await connect();
+  const firstSocket = await first;
+  const secondSocket = await second;
+  const result = new Promise<PromiseSettledResult<void>[]>((resolve) => {
+    firstSocket.once("close", () => {
+      // The session's close listener has started to close the idle Harness.
+      const late = sessions.connect(ID, secondSocket);
+      const shutdown = sessions.close();
+      closeSessions = () => shutdown;
+      resolve(Promise.allSettled([late, shutdown]));
+    });
+  });
+
+  await browser.close();
+  const [late, shutdown] = await result;
+  await waiting.close();
+  expect(shutdown).toMatchObject({ status: "fulfilled" });
+  expect(late).toMatchObject({ status: "rejected", reason: { message: "Sessions are closed" } });
+  expect(opens).toBe(1);
 });
 
 test("a frame that is too long or not a ClientMessage closes the socket", async () => {

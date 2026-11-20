@@ -58,8 +58,11 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
     closing = true;
     for (const socket of sockets) socket.close(code);
     await opened;
-    // A failed Harness has closed itself.
-    await harness?.close(context).catch(() => {});
+    if (harness !== undefined) {
+      await harness.close(context).catch(() => {});
+      // A failed Harness can reject calls before it finishes closing its storage.
+      await harness.closed;
+    }
     closed.resolve();
   };
 
@@ -84,7 +87,7 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
   const resume = ({ harness } = open!): void => {
     if (!armed({ ...harness.wake(), active: true })) return;
     harness.resume();
-    if (armed(harness.wake())) settle();
+    if (!closing && armed(harness.wake())) settle();
   };
 
   const opened = (async () => {
@@ -94,7 +97,10 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
         ...harnessOptions(),
         // Until `resume()` has run, the row that the caller armed before this open stays.
         onWake: (wake) => void (open !== undefined && !closing && armed(wake) && settle()),
-        onReport: ({ error, ...report }) => log(id, report, error),
+        onReport: ({ error, ...report }) => {
+          log(id, report, error);
+          if (report.kind === "storage_failed") void close(1011);
+        },
       },
       context,
     );
@@ -122,9 +128,9 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
     try {
       if (!armed({ ...open.harness.wake(), active: true })) return;
       await open.root.submit({ type: "input", content, requestId, whenBusy: "followUp" }, context);
-      send(socket, { type: "result", requestId, ok: true });
+      if (!closing) send(socket, { type: "result", requestId, ok: true });
     } catch (error) {
-      send(socket, { type: "result", requestId, ok: false, error: error instanceof Error ? error.message : String(error) });
+      if (!closing) send(socket, { type: "result", requestId, ok: false, error: error instanceof Error ? error.message : String(error) });
     }
   };
 
