@@ -361,19 +361,21 @@ type ToolActivity = {
 /** Contributions by tool name. */
 type ToolActivityTable = ReadonlyMap<string, ToolActivity>;
 
-/** The reminder's text, as the agent wrote it. */
-const reminderText = (step: Step) => {
-  const text = step.tool.args.text;
-  return typeof text === "string" ? firstLine(text) : "";
-};
+/** A reminder's words: the verb, then its text as the agent wrote it (none while its arguments stream in). */
+const reminder =
+  (verb: string) =>
+  (step: Step): Label => {
+    const text = typeof step.tool.args.text === "string" ? firstLine(step.tool.args.text) : "";
+    return text ? { kind: "reminder", verb: `${verb}:`, object: text, style: "words" } : { kind: "reminder", verb };
+  };
 
 /** This app's tools (`src/chat.ts`): `remind` sends a text back to the conversation after a delay. */
 const TOOLS: ToolActivityTable = new Map<string, ToolActivity>([
   [
     "remind",
     {
-      describe: (step) => ({ kind: "reminder", verb: "Set a reminder:", object: reminderText(step), style: "words" }),
-      running: (step) => ({ kind: "reminder", verb: "Setting a reminder:", object: reminderText(step), style: "words" }),
+      describe: reminder("Set a reminder"),
+      running: reminder("Setting a reminder"),
       summary: (count) => (count === 1 ? "set a reminder" : `set ${count} reminders`),
     },
   ],

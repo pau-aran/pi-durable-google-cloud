@@ -190,6 +190,11 @@ describe("a step's words", () => {
       style: "words",
     });
     expect(live(step(remind("r"), "running"))).toMatchObject({ verb: "Setting a reminder:", object: "stretch" });
+    // Its arguments still streaming: no text yet, and no colon before it.
+    expect(live(step(tool("r", "remind", {}, { status: "pending" }), "running"))).toEqual({
+      kind: "reminder",
+      verb: "Setting a reminder",
+    });
     const fetch = tool("f", "web_fetch", { limit: 3, url: "https://example.com\nmore" });
     expect(describeStep(step(fetch, "done"))).toEqual({
       kind: "tool",
