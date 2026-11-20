@@ -36,12 +36,13 @@ export function useFollow(
     const element = scroller.current!;
     let following = true;
     let lastTop = 0;
-    /** The first row in view and where it was, for a reader who is not at the bottom. */
+    /**
+     * The first row in view and where it was, for a reader who is not at the bottom. The browser's scroll anchoring is
+     * off (`.scroller` in style.css): it does nothing at the very top (Chromium), where earlier entries arrive, and not
+     * every browser has it.
+     */
     let anchor: { row: Element; top: number } | undefined;
     let watched: Element | null = null;
-    // The browser's scroll anchoring does nothing at the very top (Chromium), where earlier entries arrive, and not
-    // every browser has it: the anchor row below keeps the place everywhere.
-    element.style.overflowAnchor = "none";
 
     const capture = (): void => {
       const top = element.getBoundingClientRect().top;

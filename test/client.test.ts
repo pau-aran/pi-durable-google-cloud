@@ -45,6 +45,20 @@ describe("ChatState", () => {
     expect(state.unanswered()).toEqual([{ type: "prompt", requestId: "b", content: "two" }]);
   });
 
+  it("returns the same unanswered list until a prompt joins or leaves it", () => {
+    const state = new ChatState();
+    state.prompt("one", "a");
+    const list = state.unanswered();
+    state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(1, "hi")], docs: {} } }));
+    state.receive(frame({ type: "ops", ops: [["s", ["docs", "pi.live"], {}]] }));
+    state.dismissError();
+
+    expect(state.unanswered()).toBe(list);
+    state.receive(frame({ type: "result", requestId: "a", ok: true }));
+    expect(state.unanswered()).not.toBe(list);
+    expect(state.unanswered()).toEqual([]);
+  });
+
   it("shows a failed result and stops sending its prompt", () => {
     const state = new ChatState();
     state.prompt("one", "a");
@@ -79,6 +93,27 @@ describe("ChatState", () => {
     expect(state.snapshot.earlier).toBeUndefined();
   });
 
+  it("keeps the earlier marker after a full page, until a page comes back short", async () => {
+    const sent: { requestId: string; maxEntryId?: number }[] = [];
+    const state = new ChatState((message) => sent.push(message as (typeof sent)[number]) > 0);
+    state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(60, "new")], before: 59, docs: {} } }));
+
+    const full = state.loadEarlier();
+    await sending();
+    const page = Array.from({ length: 50 }, (_, index) => user(59 - index, "old"));
+    state.receive(frame({ type: "entries", requestId: sent[0]!.requestId, entries: page }));
+    await full;
+    expect(state.snapshot.earlier).toBe("more");
+
+    const short = state.loadEarlier();
+    await sending();
+    expect(sent[1]!.maxEntryId).toBe(9);
+    state.receive(frame({ type: "entries", requestId: sent[1]!.requestId, entries: [user(9, "oldest")] }));
+    await short;
+    expect(state.snapshot.earlier).toBeUndefined();
+    expect(state.snapshot.shown?.items).toHaveLength(52);
+  });
+
   it("keeps the earlier marker when the socket closes during a load", async () => {
     const state = new ChatState(() => true);
     state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(3, "new")], before: 2, docs: {} } }));
@@ -89,5 +124,18 @@ describe("ChatState", () => {
     await loaded;
 
     expect(state.snapshot.earlier).toBe("more");
+  });
+
+  it("leaves what is shown and the unanswered list alone when a load of earlier entries fails", async () => {
+    const state = new ChatState(() => false);
+    state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(3, "new")], before: 2, docs: {} } }));
+    state.prompt("waiting", "a");
+    const { shown } = state.snapshot;
+    const list = state.unanswered();
+
+    await state.loadEarlier();
+
+    expect(state.snapshot.shown).toBe(shown);
+    expect(state.unanswered()).toBe(list);
   });
 });

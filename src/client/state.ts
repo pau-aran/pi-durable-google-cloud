@@ -34,8 +34,15 @@ export type ChatSnapshot = {
 export class ChatState {
   readonly #send: (message: ClientMessage) => boolean;
   #view: ConversationView | undefined;
-  readonly #transcript = new ConversationTranscript(async (query, limit) => ({ items: await this.#entries(query, limit) }));
+  readonly #transcript = new ConversationTranscript(async (query, limit) => {
+    const items = await this.#entries(query, limit);
+    // An `entries` frame has no cursor, and without `next` the transcript takes the page for the last one. A full page
+    // may have more after it: the next page, maybe an empty one, tells.
+    return items.length < limit ? { items } : { items, next: {} };
+  });
   readonly #unanswered = new Map<string, Prompt>();
+  /** `#unanswered` as a list: a new array only when the prompts in it change. */
+  #unansweredList: Prompt[] = [];
   readonly #entryRequests = new Map<string, PromiseWithResolvers<readonly EntryRecord[]>>();
   readonly #listeners = new Set<() => void>();
   #loadingEarlier = false;
@@ -75,14 +82,20 @@ export class ChatState {
     const message: Prompt = { type: "prompt", requestId, content };
     const fits = JSON.stringify(message).length <= MAX_CLIENT_FRAME_CHARACTERS;
     this.#error = fits ? undefined : "The message is too long.";
-    if (fits) this.#unanswered.set(requestId, message);
+    if (fits) {
+      this.#unanswered.set(requestId, message);
+      this.#unansweredList = [...this.#unanswered.values()];
+    }
     this.#changed();
     return fits ? message : undefined;
   }
 
-  /** Every prompt without a `result`, oldest first, to send again after a reconnect. */
-  unanswered(): Prompt[] {
-    return [...this.#unanswered.values()];
+  /**
+   * Every prompt without a `result`, oldest first, to send again after a reconnect. The same array until a prompt
+   * joins or leaves it, so the page can compare it by identity.
+   */
+  unanswered(): readonly Prompt[] {
+    return this.#unansweredList;
   }
 
   /** Drop the error that `snapshot` shows. */
@@ -126,7 +139,7 @@ export class ChatState {
       this.#entryRequests.delete(message.requestId);
       if (message.type === "entries") return request?.resolve(message.entries);
       if (request) return request.reject(new Error(message.ok ? "No entries." : message.error));
-      this.#unanswered.delete(message.requestId);
+      if (this.#unanswered.delete(message.requestId)) this.#unansweredList = [...this.#unanswered.values()];
       if (!message.ok) this.#error = message.error;
     } else {
       this.#view = message.type === "view" ? message.view : applyImmutable(this.#view, message.ops);
