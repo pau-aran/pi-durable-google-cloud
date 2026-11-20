@@ -34,7 +34,12 @@ export type ChatSnapshot = {
 export class ChatState {
   readonly #send: (message: ClientMessage) => boolean;
   #view: ConversationView | undefined;
-  readonly #transcript = new ConversationTranscript(async (query, limit) => ({ items: await this.#entries(query, limit) }));
+  readonly #transcript = new ConversationTranscript(async (query, limit) => {
+    const items = await this.#entries(query, limit);
+    // An `entries` frame has no cursor, and without `next` the transcript takes the page for the last one. A full page
+    // may have more after it: the next page, maybe an empty one, tells.
+    return items.length < limit ? { items } : { items, next: {} };
+  });
   readonly #unanswered = new Map<string, Prompt>();
   /** `#unanswered` as a list: a new array only when the prompts in it change. */
   #unansweredList: Prompt[] = [];

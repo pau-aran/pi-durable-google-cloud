@@ -93,6 +93,27 @@ describe("ChatState", () => {
     expect(state.snapshot.earlier).toBeUndefined();
   });
 
+  it("keeps the earlier marker after a full page, until a page comes back short", async () => {
+    const sent: { requestId: string; maxEntryId?: number }[] = [];
+    const state = new ChatState((message) => sent.push(message as (typeof sent)[number]) > 0);
+    state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(60, "new")], before: 59, docs: {} } }));
+
+    const full = state.loadEarlier();
+    await sending();
+    const page = Array.from({ length: 50 }, (_, index) => user(59 - index, "old"));
+    state.receive(frame({ type: "entries", requestId: sent[0]!.requestId, entries: page }));
+    await full;
+    expect(state.snapshot.earlier).toBe("more");
+
+    const short = state.loadEarlier();
+    await sending();
+    expect(sent[1]!.maxEntryId).toBe(9);
+    state.receive(frame({ type: "entries", requestId: sent[1]!.requestId, entries: [user(9, "oldest")] }));
+    await short;
+    expect(state.snapshot.earlier).toBeUndefined();
+    expect(state.snapshot.shown?.items).toHaveLength(52);
+  });
+
   it("keeps the earlier marker when the socket closes during a load", async () => {
     const state = new ChatState(() => true);
     state.receive(frame({ type: "view", view: { conversation: { id: 1 }, entries: [user(3, "new")], before: 2, docs: {} } }));
