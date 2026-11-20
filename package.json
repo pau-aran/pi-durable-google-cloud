@@ -1,0 +1,27 @@
+{
+  "name": "pi-durable-google-cloud",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node --env-file-if-exists=.env src/server.ts",
+    "test": "vitest --run",
+    "check": "tsc && vitest --run && vite build"
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.5.2",
+    "@earendil-works/pi-ai": "1.5.2",
+    "@earendil-works/pi-durable": "1.5.2",
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.2",
+    "typescript": "7.0.2",
+    "vite": "^8.3.7",
+    "vitest": "5.1.0"
+  },
+  "packageManager": "pnpm@11.15.1"
+}
