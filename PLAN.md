@@ -41,6 +41,7 @@ One pod serves the page, the API, and the sockets. More pods need a router and a
 - `POST /api/sessions` returns `201 {"sessionId": "<uuid>"}`.
 - `GET /api/sessions/<uuid>` with `Upgrade: websocket` attaches the socket to that session.
 - `GET /healthz` returns `200`.
+- Each other `GET` under `/api/` returns `404`.
 - Each other `GET` serves a file from `dist/`, or `dist/index.html`. The page of a session is `/s/<uuid>`.
 
 The server rejects a session id that does not match `SESSION_ID_PATTERN`, because the id becomes a file name.
@@ -86,7 +87,8 @@ A test confirmed the rule: two sessions with sleeping tasks were closed, and a n
 | Service | Port 8080, with the `BackendConfig` annotation. |
 | BackendConfig | `timeoutSec: 86400`. The default of 30 s is the longest life of a WebSocket through the load balancer. |
 | ManagedCertificate | The certificate of the domain. The browser needs HTTPS for `crypto.randomUUID()`. |
-| Ingress | The external Application Load Balancer. |
+| FrontendConfig | `redirectToHttps`: an HTTP request gets a redirect to HTTPS. |
+| Ingress | The external Application Load Balancer, with the `ManagedCertificate` and `FrontendConfig` annotations. |
 
 ```sh
 gcloud container clusters create-auto pi-durable --region us-central1

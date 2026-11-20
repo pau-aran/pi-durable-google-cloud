@@ -27,8 +27,9 @@ export type Server = {
 /** Serve the routes of `PLAN.md` on `port`: the session API, the WebSocket upgrade, and the files of `staticDir`. */
 export async function startServer(options: { port: number; staticDir: string; sessions: Sessions }): Promise<Server> {
   const staticDir = resolve(options.staticDir);
-  // A frame of more characters has more bytes, so `ws` closes it with 1009.
-  const sockets = new WebSocketServer({ noServer: true, maxPayload: MAX_CLIENT_FRAME_CHARACTERS });
+  // `maxPayload` counts UTF-8 bytes, and one character (UTF-16 code unit) takes at most 3 of them. So each frame within
+  // the character limit passes, and the session closes a frame over that limit with 1009. `ws` closes larger ones first.
+  const sockets = new WebSocketServer({ noServer: true, maxPayload: 3 * MAX_CLIENT_FRAME_CHARACTERS });
 
   async function serveStatic(pathname: string, response: ServerResponse): Promise<void> {
     const index = resolve(staticDir, "index.html");
@@ -71,7 +72,8 @@ export async function startServer(options: { port: number; staticDir: string; se
   });
 
   server.on("upgrade", (request, socket, head) => {
-    const { pathname } = new URL(request.url ?? "/", "http://localhost");
+    // A target that is no URL, such as `//[`, gets an empty path and so a 400.
+    const pathname = URL.parse(request.url ?? "/", "http://localhost")?.pathname ?? "";
     const id = pathname.startsWith(SESSION_PATH) ? pathname.slice(SESSION_PATH.length) : "";
     if (!SESSION_ID_PATTERN.test(id)) {
       socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
