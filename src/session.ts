@@ -1,8 +1,8 @@
 import { BACKGROUND_CONTEXT as context } from "@earendil-works/chord/context";
-import { type Conversation, type ConversationView, Harness, type HarnessOptions, type Wake } from "@earendil-works/pi-durable";
+import { type Conversation, type ConversationView, type EntryId, Harness, type HarnessOptions, type Wake } from "@earendil-works/pi-durable";
 import { openNodeSqliteStorage } from "@earendil-works/pi-durable/storage/sqlite/node";
 import type { RawData, WebSocket } from "ws";
-import { type ClientMessage, MAX_CLIENT_FRAME_CHARACTERS, type ServerMessage } from "./protocol.ts";
+import { type ClientMessage, MAX_CLIENT_FRAME_CHARACTERS, MAX_ENTRIES_LIMIT, type ServerMessage } from "./protocol.ts";
 
 /** One open Harness, the sockets that watch its root conversation, and its row in the wake index. */
 export type Session = {
@@ -34,8 +34,21 @@ function parse(text: string): ClientMessage | undefined {
   try {
     const message: unknown = JSON.parse(text);
     if (typeof message !== "object" || message === null) return undefined;
-    const { type, requestId, content } = message as Record<string, unknown>;
-    if (type === "prompt" && typeof requestId === "string" && typeof content === "string") return { type, requestId, content };
+    const { type, requestId, content, minEntryId, maxEntryId, order, limit } = message as Record<string, unknown>;
+    if (typeof requestId !== "string") return undefined;
+    if (type === "prompt" && typeof content === "string") return { type, requestId, content };
+    const id = (value: unknown) => value === undefined || Number.isSafeInteger(value);
+    if (
+      type === "entries" &&
+      id(minEntryId) &&
+      id(maxEntryId) &&
+      (order === undefined || order === "ascending" || order === "descending") &&
+      Number.isInteger(limit) &&
+      (limit as number) >= 1 &&
+      (limit as number) <= MAX_ENTRIES_LIMIT
+    ) {
+      return { type, requestId, minEntryId, maxEntryId, order, limit } as ClientMessage;
+    }
   } catch {}
   return undefined;
 }
@@ -122,12 +135,20 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
     void close(1011);
   });
 
-  const prompt = async (socket: WebSocket, { requestId, content }: ClientMessage): Promise<void> => {
+  const receive = async (socket: WebSocket, message: ClientMessage): Promise<void> => {
     await opened;
     if (open === undefined || closing) return;
+    const { requestId } = message;
     try {
+      if (message.type === "entries") {
+        const { minEntryId, maxEntryId, order, limit } = message;
+        const query = { minEntryId: minEntryId as EntryId | undefined, maxEntryId: maxEntryId as EntryId | undefined, order };
+        const page = await open.root.entries(query, limit, undefined, context);
+        if (!closing) send(socket, { type: "entries", requestId, entries: page.items });
+        return;
+      }
       if (!armed({ ...open.harness.wake(), active: true })) return;
-      await open.root.submit({ type: "input", content, requestId, whenBusy: "followUp" }, context);
+      await open.root.submit({ type: "input", content: message.content, requestId, whenBusy: "followUp" }, context);
       if (!closing) send(socket, { type: "result", requestId, ok: true });
     } catch (error) {
       if (!closing) send(socket, { type: "result", requestId, ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -148,7 +169,7 @@ export function openSession({ id, file, harness: harnessOptions, arm }: SessionO
         if (text.length > MAX_CLIENT_FRAME_CHARACTERS) return socket.close(1009);
         const message = isBinary ? undefined : parse(text);
         if (message === undefined) return socket.close(1002);
-        void prompt(socket, message);
+        void receive(socket, message);
       });
       if (open !== undefined) send(socket, { type: "view", view: open.view });
       return true;

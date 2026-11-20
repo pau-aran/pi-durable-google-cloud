@@ -409,3 +409,38 @@ test("concurrent connects for one closed session open it once", async () => {
 
   expect(opens).toBe(1);
 });
+
+test("an entries request returns the entries before the view's window", async () => {
+  const turns = 30;
+  faux.setResponses(Array.from({ length: turns }, (_, index) => fauxAssistantMessage(`Answer ${index}.`)));
+  await open();
+  const writer = await connect();
+  for (let index = 0; index < turns; index++) {
+    writer.send({ type: "prompt", requestId: `r${index}`, content: `Question ${index}` });
+    await writer.shows(`Answer ${index}.`);
+  }
+  await writer.close();
+
+  const browser = await connect();
+  await browser.until(() => browser.frames.length > 0);
+  const { view } = browser.frames[0] as Extract<ServerMessage, { type: "view" }>;
+  expect(view.before).toBeDefined();
+  browser.send({ type: "entries", requestId: "e1", maxEntryId: view.before, limit: 100 });
+  await browser.until(() => browser.frames.length > 1);
+
+  const answer = browser.frames[1] as Extract<ServerMessage, { type: "entries" }>;
+  expect(answer).toMatchObject({ type: "entries", requestId: "e1" });
+  expect(answer.entries[0]!.id).toBe(view.before);
+  expect(answer.entries.length + view.entries.length).toBe(2 * turns);
+  expect(JSON.stringify(answer.entries.at(-1))).toContain("Question 0");
+});
+
+test("an entries request with a limit out of range closes the socket", async () => {
+  await open();
+  const browser = await connect();
+  await browser.until(() => browser.frames.length > 0);
+
+  browser.send(JSON.stringify({ type: "entries", requestId: "e1", limit: 101 }));
+
+  expect(await browser.closed).toBe(1002);
+});
