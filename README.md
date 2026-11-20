@@ -77,7 +77,7 @@ flowchart LR
   chat -- "model requests" --> openai
 ```
 
-**A session.** `POST /api/sessions` returns a new UUID. The browser then opens a WebSocket on `/api/sessions/<uuid>`. The server opens the session's SQLite file with a pi-durable Harness, sends the conversation as one `view` frame, and after each commit sends the changes as `ops` frames to every socket of that session. The browser sends `prompt` frames. Each prompt has a request ID, so a prompt that is sent again after a reconnect is stored once.
+**A session.** `POST /api/sessions` returns a new UUID. The browser then opens a WebSocket on `/api/sessions/<uuid>`. The server opens the session's SQLite file with a pi-durable Harness, sends the conversation as one `view` frame, and after each commit sends the changes as `ops` frames to every socket of that session. The browser sends `prompt` frames. Each prompt has a request ID, so a prompt that is sent again after a reconnect is stored once. The view holds the newest entries of the conversation; the browser asks for older ones with `entries` frames.
 
 **Waking up.** The Harness keeps no timer for sleeping tasks. It tells the session when it must run next, and the session writes that time to `wakes.sqlite`. One timer in the pod waits for the earliest row and opens the session if it is closed. While work runs, the row stays at most 60 seconds ahead. After a crash, the new pod finds the row and continues the work.
 
@@ -92,7 +92,7 @@ flowchart LR
 - [`src/sessions.ts`](src/sessions.ts) keeps the open sessions, the wake index, and the timer.
 - [`src/server.ts`](src/server.ts) has the routes, the WebSocket upgrade, static files, and shutdown.
 - [`src/protocol.ts`](src/protocol.ts) is the contract between browser and server.
-- [`src/client/`](src/client/) is the browser client in plain TypeScript. It applies the operations to its copy of the view and renders it.
+- [`src/client/`](src/client/) is the browser client in React, a port of the chat of [p2](https://github.com/earendil-works/pi/tree/main/apps/p2), the web UI of the Pi harness. [`state.ts`](src/client/state.ts) applies the operations to its copy of the view, [`transcript.ts`](src/client/transcript.ts) and [`activity/model.ts`](src/client/activity/model.ts) turn the view into the rows of the chat, and [`ChatPage.tsx`](src/client/ChatPage.tsx) has the socket, the transcript, and the composer.
 - [`test/`](test/) covers prompts, reconnects, wakes, recovery after a lost process, and the routes. The tests run on a temporary directory with a fake model.
 
 ## Commands
@@ -120,4 +120,4 @@ Before you expose a deployment, add authentication, authorization, and rate limi
 
 ## License
 
-MIT
+MIT. [`THIRD_PARTY.md`](THIRD_PARTY.md) lists the files that come from p2 and the packages in the client bundle, with their licences.
