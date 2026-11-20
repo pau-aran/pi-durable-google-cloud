@@ -82,6 +82,8 @@ export function createChatHarnessOptions(): HarnessOptions {
   return {
     models,
     registry,
+    // A follow-up queued behind a failed answer runs at once. With the default, it waits for another input with no wake row.
+    settings: { afterFailedRun: "continue" },
     conversationCreated: (tx, conversation) =>
       configure(tx, conversation.id, { model: { provider: "openai", modelId: "gpt-6.1-sol" } }),
   };

@@ -86,3 +86,31 @@ test("remind refuses a delay longer than one year with an error the model reads"
   expect(harness.wake().at).toBeUndefined();
   await harness.close(context);
 });
+
+test("a follow-up queued behind a failed answer still runs", async () => {
+  const faux = fauxProvider();
+  const models = createModels();
+  models.setProvider(faux.provider);
+  const model = faux.getModel();
+  const release = Promise.withResolvers<void>();
+  faux.setResponses([
+    async () => {
+      await release.promise;
+      return fauxAssistantMessage("", { stopReason: "error", errorMessage: "permanent failure" });
+    },
+    fauxAssistantMessage("second answer"),
+  ]);
+
+  const harness = await Harness.open(new MemoryStorage(), { ...createChatHarnessOptions(), models }, context);
+  const root = await harness.root(context, { agent: { model: { provider: model.provider, modelId: model.id } } });
+  await root.submit({ type: "input", content: "first" }, context);
+  await expect.poll(() => faux.state.callCount).toBe(1);
+  await root.submit({ type: "input", content: "second", whenBusy: "followUp" }, context);
+  release.resolve();
+  await expect.poll(() => faux.state.callCount).toBeGreaterThanOrEqual(2);
+  await harness.waitForIdle(context);
+
+  const { messages } = await root.context(context);
+  expect(messages.at(-1)).toMatchObject({ role: "assistant", content: [{ type: "text", text: "second answer" }] });
+  await harness.close(context);
+});
