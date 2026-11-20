@@ -1,4 +1,5 @@
 import { createModels } from "@earendil-works/pi-ai/models";
+import { googleVertexProvider } from "@earendil-works/pi-ai/providers/google-vertex";
 import { openaiProvider } from "@earendil-works/pi-ai/providers/openai";
 import {
   configure,
@@ -73,10 +74,25 @@ const Chat = defineExtension({
   ],
 });
 
+/** The model provider from `MODEL_PROVIDER` (default `openai`) and the model ID from `MODEL_ID` (default: the provider's model). */
+function chooseModel(env: NodeJS.ProcessEnv) {
+  const provider = env.MODEL_PROVIDER || "openai";
+  if (provider === "openai") return { provider: openaiProvider(), modelId: env.MODEL_ID || "gpt-6.1-sol" };
+  if (provider !== "google-vertex") {
+    throw new Error(`MODEL_PROVIDER is "${provider}". Set it to "openai" or "google-vertex".`);
+  }
+  if (!env.GOOGLE_CLOUD_API_KEY) throw new Error('MODEL_PROVIDER is "google-vertex", but GOOGLE_CLOUD_API_KEY is not set.');
+  return { provider: googleVertexProvider(), modelId: env.MODEL_ID || "gemini-4-argon" };
+}
+
+// Stop the server at startup, not at the first session, when the model settings are wrong.
+chooseModel(process.env);
+
 /** The agent of this sample: its models, tools, and system prompt. It knows nothing about the host. */
-export function createChatHarnessOptions(): HarnessOptions {
+export function createChatHarnessOptions(env = process.env): HarnessOptions {
+  const { provider, modelId } = chooseModel(env);
   const models = createModels();
-  models.setProvider(openaiProvider());
+  models.setProvider(provider);
   const registry = createRegistry();
   registry.install(Chat);
   return {
@@ -85,6 +101,6 @@ export function createChatHarnessOptions(): HarnessOptions {
     // A follow-up queued behind a failed answer runs at once. With the default, it waits for another input with no wake row.
     settings: { afterFailedRun: "continue" },
     conversationCreated: (tx, conversation) =>
-      configure(tx, conversation.id, { model: { provider: "openai", modelId: "gpt-6.1-sol" } }),
+      configure(tx, conversation.id, { model: { provider: provider.id, modelId } }),
   };
 }
