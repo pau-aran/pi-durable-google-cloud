@@ -24,7 +24,7 @@ export type Server = {
   close(): Promise<void>;
 };
 
-/** Serve the routes of `PLAN.md` on `port`: the session API, the WebSocket upgrade, and the files of `staticDir`. */
+/** Serve on `port`: the session API, the WebSocket upgrade, and the files of `staticDir`. */
 export async function startServer(options: { port: number; staticDir: string; sessions: Sessions }): Promise<Server> {
   const staticDir = resolve(options.staticDir);
   // `maxPayload` counts UTF-8 bytes, and one character (UTF-16 code unit) takes at most 3 of them. So each frame within
