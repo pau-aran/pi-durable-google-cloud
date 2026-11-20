@@ -104,14 +104,16 @@ function showChat(sessionId: string): void {
   let failures = 0;
   const connect = () => {
     const next = new WebSocket(url);
-    next.onopen = () => {
-      failures = 0;
-      socket = next;
-      status.textContent = "Connected";
-      for (const message of state.unanswered()) next.send(JSON.stringify(message));
-    };
     next.onmessage = (event) => {
-      state.receive(JSON.parse(event.data as string) as ServerMessage);
+      const message = JSON.parse(event.data as string) as ServerMessage;
+      state.receive(message);
+      // The server reads prompts only once the session is attached, which its first `view` shows.
+      if (message.type === "view" && socket !== next) {
+        failures = 0;
+        socket = next;
+        status.textContent = "Connected";
+        for (const prompt of state.unanswered()) next.send(JSON.stringify(prompt));
+      }
       render();
     };
     next.onclose = () => {
