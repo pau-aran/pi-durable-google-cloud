@@ -1,0 +1,117 @@
+/* Adapted from p2 (apps/p2/src/web/elanor-extra/elanor-extra.css): the Ticker's rules only. */
+/*
+ * Styles of the Elanor component p2 builds itself until Elanor's npm release has it (ticker.tsx): Elanor's own, as
+ * built on the p2-elanor branch, in Elanor's cascade layer so the app's unlayered rules win as they do over the rest of
+ * Elanor. Loaded after elanor.min.css: at equal specificity these come later. Remove with the component once Elanor
+ * ships it.
+ */
+@layer elanor.components {
+  /* Ticker */
+  .el-ticker {
+    position: relative;
+    display: block;
+    flex: 1;
+    align-self: stretch;
+    box-sizing: border-box;
+    min-inline-size: 0;
+    min-block-size: calc(var(--semantic-dimension-size-small) * 3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--semantic-dimension-radius-default);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .el-ticker:active {
+    cursor: grabbing;
+  }
+  .el-ticker:focus-visible {
+    outline: var(--semantic-dimension-border-width-large) solid var(--semantic-color-focus-ring);
+    outline-offset: calc(var(--semantic-dimension-border-width-large) * -1);
+  }
+  .el-ticker-drum {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    perspective: 18rem;
+    -webkit-mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+    mask-image: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  }
+  .el-ticker-item {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline: 0;
+    display: flex;
+    align-items: center;
+    block-size: var(--semantic-dimension-size-small);
+    margin-block-start: calc(var(--semantic-dimension-size-small) * -1 / 2);
+    backface-visibility: hidden;
+    color: var(--semantic-color-text-secondary);
+    white-space: nowrap;
+  }
+  .el-ticker-item svg {
+    color: var(--semantic-color-icon-secondary);
+  }
+  .el-ticker-item[data-current],
+  .el-ticker-item[data-current] svg {
+    color: inherit;
+  }
+  .el-ticker-item[data-negative] {
+    color: var(--semantic-color-text-negative);
+  }
+  .el-ticker-item[data-negative] svg {
+    color: var(--semantic-color-icon-negative);
+  }
+  .el-ticker-content {
+    display: flex;
+    align-items: center;
+    gap: var(--semantic-dimension-space-gap-small);
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+  .el-ticker-content > * {
+    flex: none;
+  }
+  .el-ticker-content > :not(svg, img) {
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .el-ticker[data-active] .el-ticker-item[data-current][data-newest] > .el-ticker-content {
+    animation: el-ticker-breathe var(--semantic-transition-pulse-duration)
+      var(--semantic-transition-pulse-timing-function) infinite alternate;
+  }
+  @keyframes el-ticker-breathe {
+    to {
+      opacity: var(--semantic-number-opacity-pulse);
+    }
+  }
+  .el-ticker-announcement {
+    position: absolute;
+    inline-size: var(--semantic-dimension-border-width-small);
+    block-size: var(--semantic-dimension-border-width-small);
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .el-ticker[data-active] .el-ticker-item[data-current][data-newest] > .el-ticker-content {
+      animation: none;
+    }
+  }
+  @media (forced-colors: active) {
+    .el-ticker[data-active] .el-ticker-item[data-current][data-newest] > .el-ticker-content {
+      animation: none;
+    }
+    .el-ticker:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

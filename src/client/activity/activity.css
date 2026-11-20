@@ -1,0 +1,264 @@
+/* Adapted from p2 (apps/p2/src/web/activity/activity.css): the panel's step list now opens in place, below the wheel. */
+/* A run's activity row, its steps, step labels and details (src/client/activity). The ticker is Elanor's (built in p2
+ * for now: ../elanor-extra). */
+
+/*
+ * The interface's sans (--sans), not the pi brand's serif that Elanor's ui typography uses: the block sets its tokens
+ * anew, so every Elanor component inside it follows. Sizes and weights stay Elanor's.
+ */
+.activity-block {
+  --semantic-typography-ui-primary:
+    var(--semantic-typography-ui-primary-font-weight) var(--semantic-typography-ui-primary-font-size) /
+    var(--semantic-typography-ui-primary-line-height) var(--sans);
+  --semantic-typography-ui-secondary:
+    var(--semantic-typography-ui-secondary-font-weight) var(--semantic-typography-ui-secondary-font-size) /
+    var(--semantic-typography-ui-secondary-line-height) var(--sans);
+  --semantic-typography-ui-tertiary:
+    var(--semantic-typography-ui-tertiary-font-weight) var(--semantic-typography-ui-tertiary-font-size) /
+    var(--semantic-typography-ui-tertiary-line-height) var(--sans);
+  --semantic-typography-ui-label:
+    var(--semantic-typography-ui-label-font-weight) var(--semantic-typography-ui-label-font-size) /
+    var(--semantic-typography-ui-label-line-height) var(--sans);
+}
+
+/* The row in the chat: one large tap target per turn, without a background; it highlights when pressed. */
+.activity {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: var(--semantic-dimension-space-gap-small);
+  /* One --row: the working wheel turning into the summary never changes the height. */
+  block-size: var(--row);
+  margin-inline: calc(-1 * var(--semantic-dimension-space-padding-medium));
+  padding-inline: var(--semantic-dimension-space-padding-medium);
+  border-radius: var(--semantic-dimension-radius-large);
+  color: var(--semantic-color-text-primary);
+  font: var(--semantic-typography-ui-secondary);
+  text-align: start;
+  transition: background-color 0.45s ease-out;
+}
+@media (hover: hover) {
+  .activity-turn:hover {
+    background: var(--semantic-color-background-fill-ghost-neutral-hover);
+  }
+}
+.activity-turn:active {
+  background: var(--semantic-color-background-fill-ghost-neutral-active);
+}
+/* Done: no background, the words in the secondary colour. */
+.activity[data-state="done"] {
+  color: var(--semantic-color-text-secondary);
+}
+/* How long the turn took: counting while it works. */
+.activity-time {
+  flex: none;
+  color: var(--semantic-color-text-secondary);
+  font: var(--semantic-typography-ui-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+.activity-chevron {
+  display: grid;
+  flex: none;
+  place-items: center;
+  color: var(--semantic-color-icon-secondary);
+}
+.activity-block.selected .activity-chevron {
+  transform: rotate(90deg);
+}
+
+/* A step's words: the verb, then a command (code font); the agent's words as they are. */
+.label-text {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label-object[data-style="code"] {
+  font-family: var(--semantic-font-family-code);
+  font-size: 0.9em;
+}
+/* In the wheel the verb leads ("Setting a reminder"): bold, and what it acts on in the regular weight. */
+.activity-ticker .label-verb {
+  font-weight: var(--semantic-font-weight-ui-selected);
+}
+.label-extra {
+  color: var(--semantic-color-text-secondary);
+}
+
+/* A step's detail: Input, then Output, each under its label. */
+.detail-label {
+  margin: 0;
+  color: var(--semantic-color-text-secondary);
+  font: var(--semantic-typography-ui-secondary);
+}
+/* A quiet line: no output, how a call ended. */
+.detail-note {
+  margin: 0;
+  color: var(--semantic-color-text-secondary);
+  font: var(--semantic-typography-ui-secondary);
+  overflow-wrap: anywhere;
+}
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--semantic-dimension-space-gap-x-small);
+  min-inline-size: 0;
+}
+.detail-section > * {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+.detail-section pre {
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+/* Output as a terminal block. */
+.detail-terminal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--semantic-dimension-radius-default);
+  background: var(--semantic-color-background-fill-secondary);
+}
+/* Long lines wrap: an output scrolled sideways hides most of it. */
+.detail-output {
+  margin: 0;
+  padding: var(--semantic-dimension-space-padding-medium) var(--semantic-dimension-space-padding-large);
+  font: var(--semantic-typography-code-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--semantic-color-text-code);
+}
+/* A failure: its output in red, no louder than that. */
+.detail-terminal[data-failed] .detail-output {
+  color: var(--semantic-color-text-negative);
+}
+
+/* The wheel (Elanor's Ticker) fills the row; a finished turn reads in the secondary colour. */
+.activity-turn {
+  cursor: pointer;
+}
+.activity-ticker {
+  flex: 1;
+  align-self: stretch;
+  min-inline-size: 0;
+  /* The row's height, not Elanor's three faces: one face shows, the others roll through it. */
+  min-block-size: 0;
+}
+/* Only the face in front: the ones before and after fade out within the row instead of showing as cut slivers. */
+.activity-ticker .el-ticker-drum {
+  -webkit-mask-image: linear-gradient(
+    transparent 8px,
+    #000 14px,
+    #000 calc(100% - 14px),
+    transparent calc(100% - 8px)
+  );
+  mask-image: linear-gradient(transparent 8px, #000 14px, #000 calc(100% - 14px), transparent calc(100% - 8px));
+}
+.activity[data-state="done"] .activity-ticker {
+  color: var(--semantic-color-text-secondary);
+}
+
+/* A block is selected while its steps are open below its wheel: its row highlights, the steps stay on the page's
+   background as the panel's did. */
+.activity-block {
+  margin-inline: calc(-1 * var(--semantic-dimension-space-padding-medium));
+  padding-inline: var(--semantic-dimension-space-padding-medium);
+  border-radius: var(--radius);
+}
+.activity-block.selected > .activity {
+  background: var(--hover);
+}
+.step-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.step-list li + li {
+  border-top: 1px solid var(--line);
+}
+.step-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+  min-height: var(--row);
+  padding: 0 var(--s2) 0 var(--x);
+  color: var(--text);
+  font-size: var(--fs-sm);
+  text-align: left;
+}
+@media (hover: hover) {
+  .step-row:hover {
+    background: var(--hover);
+  }
+}
+.step-icon,
+.step-chevron {
+  display: grid;
+  flex: none;
+  place-items: center;
+  color: var(--muted);
+}
+.step-chevron {
+  color: var(--faint);
+}
+/* The main argument sits beneath its tool name so long arguments stay useful. */
+.step-words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.step-name {
+  font-weight: var(--fw-strong);
+}
+.step-argument {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: var(--fs-code);
+  text-overflow: ellipsis;
+}
+/* The step's state, and under it when it started (only where the minute changes). */
+.step-end {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+}
+.step-state[data-state="error"] {
+  color: var(--bad);
+}
+/* A step's detail: the list's padding, the sections apart. */
+.activity-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+  min-width: 0;
+  padding: var(--s4) var(--x) var(--s5);
+}
+/* Code in a detail wraps too. */
+.activity-detail .code-block pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Thinking in a wheel's list: its words, not code. */
+.step-list [data-kind] .step-argument {
+  font-family: inherit;
+  font-size: inherit;
+}
+.step-row[aria-expanded="true"] {
+  background: var(--hover);
+}
+.step-row[aria-expanded="true"] .step-chevron {
+  transform: rotate(90deg);
+}
