@@ -114,14 +114,15 @@ test("a bad session id is rejected before it reaches the sessions", async () => 
   expect(connected).toEqual([]);
 });
 
-test("a frame that is too large closes the socket with 1009", async () => {
+test("a frame within the character limit reaches the session in any script, and a far larger one closes with 1009", async () => {
   const { socket, opened, ended } = open(`/api/sessions/${ID}`);
   await opened;
   const frames: string[] = [];
   connected[0]!.socket.on("message", (data) => frames.push(String(data)));
 
-  socket.send("a".repeat(MAX_CLIENT_FRAME_CHARACTERS));
-  socket.send("a".repeat(MAX_CLIENT_FRAME_CHARACTERS + 1));
+  // Three UTF-8 bytes per character, the most one UTF-16 code unit takes.
+  socket.send("€".repeat(MAX_CLIENT_FRAME_CHARACTERS));
+  socket.send("a".repeat(3 * MAX_CLIENT_FRAME_CHARACTERS + 1));
   expect(await ended).toBe(1009);
   expect(frames.map((frame) => frame.length)).toEqual([MAX_CLIENT_FRAME_CHARACTERS]);
 });
