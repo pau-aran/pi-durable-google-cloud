@@ -1,0 +1,151 @@
+/* Adapted from p2 (apps/p2/src/web/style.css): the composer in the dock, the queued inputs above it, and the
+   scroll-down button. */
+
+/* Composer: same inset as transcript text, one vertical step. */
+.composer-wrap {
+	position: relative;
+	padding-bottom: var(--safe-bottom);
+	background: linear-gradient(transparent, var(--bg) var(--s5));
+}
+.composer,
+.queued {
+	width: var(--chat-size);
+	max-width: var(--chat-width);
+	margin: 0 auto;
+	padding-right: var(--x);
+	padding-left: var(--x);
+	background: var(--bg);
+}
+.composer {
+	padding-top: var(--s2);
+	border-top: 1px solid var(--line);
+	border-bottom: 1px solid var(--line);
+}
+.queued {
+	display: flex;
+	flex-direction: column;
+	padding-top: var(--s1);
+	border-top: 1px solid var(--line);
+}
+.queued + .composer {
+	padding-top: var(--s1);
+	border-top: 0;
+}
+.queued > div {
+	display: flex;
+	align-items: center;
+	gap: var(--s2);
+	min-height: var(--control-sm);
+	font-size: var(--fs-sm);
+}
+.queue-edit {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.queue-edit span {
+	margin-right: var(--s1);
+	color: var(--muted);
+	font-weight: var(--fw-strong);
+}
+/* A textarea in place of p2's contenteditable (its file pills do not exist here): Composer.tsx sets its height to its
+   text's. */
+.draft-editor {
+	display: block;
+	width: 100%;
+	min-height: 24px;
+	max-height: 200px;
+	padding: 0;
+	border: 0;
+	background: none;
+	resize: none;
+	overflow-y: auto;
+	outline: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	font-size: 16px;
+	line-height: 1.5;
+	cursor: text;
+}
+/* The base rule for :focus-visible may come later in the page's CSS; the caret shows the focus here. */
+.draft-editor:focus-visible {
+	outline: 0;
+}
+.draft-editor::placeholder {
+	color: var(--faint);
+	opacity: 1;
+}
+.draft-editor::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+	background: transparent;
+}
+.draft-editor::-webkit-scrollbar-thumb {
+	border-radius: 999px;
+	background: var(--scrollbar);
+}
+/* 40px targets; the outer buttons hug the inset so glyphs align with text. */
+.composer-bar {
+	display: flex;
+	align-items: center;
+	gap: var(--s1);
+	height: var(--control);
+}
+/* Send takes taps up to the composer's right edge: a thumb aiming at the glyph often lands right of it. */
+.composer-bar > .round:last-child {
+	place-items: center end;
+	width: calc(var(--control) + var(--x));
+	margin-right: calc(-1 * var(--x));
+	padding-right: var(--x);
+}
+.spacer {
+	flex: 1;
+}
+.round {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: var(--control);
+	height: var(--control);
+	color: var(--text);
+}
+.round:hover {
+	color: var(--muted);
+}
+.send:disabled {
+	color: var(--faint);
+	opacity: 1;
+}
+.to-bottom {
+	position: absolute;
+	top: calc(-1 * (var(--control) + var(--s2)));
+	left: 50%;
+	display: grid;
+	place-items: center;
+	width: var(--control);
+	height: var(--control);
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	background: var(--bg);
+	translate: -50% 0;
+	animation: rise 0.2s ease-out;
+}
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.to-bottom {
+		animation: none;
+	}
+}
+/* Touch targets: on a coarse pointer every list row and small control is at least one --row (44px) tall. */
+@media (pointer: coarse) {
+	.queued > div {
+		min-height: var(--row);
+	}
+}
