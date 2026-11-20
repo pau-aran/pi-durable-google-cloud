@@ -72,7 +72,8 @@ export async function startServer(options: { port: number; staticDir: string; se
   });
 
   server.on("upgrade", (request, socket, head) => {
-    const { pathname } = new URL(request.url ?? "/", "http://localhost");
+    // A target that is no URL, such as `//[`, gets an empty path and so a 400.
+    const pathname = URL.parse(request.url ?? "/", "http://localhost")?.pathname ?? "";
     const id = pathname.startsWith(SESSION_PATH) ? pathname.slice(SESSION_PATH.length) : "";
     if (!SESSION_ID_PATTERN.test(id)) {
       socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");

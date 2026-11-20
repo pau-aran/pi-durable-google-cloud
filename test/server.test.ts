@@ -1,5 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { request } from "node:http";
+import { connect } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, test } from "vitest";
@@ -111,6 +112,22 @@ test("a bad session id is rejected before it reaches the sessions", async () => 
     expect(await open(`/api/sessions/${id}`).ended, id).toBe(400);
   }
   expect(await open(`/other/${ID}`).ended).toBe(400);
+  expect(connected).toEqual([]);
+});
+
+test("an upgrade to a target that is no URL gets 400", async () => {
+  const reply = await new Promise<string>((done) => {
+    const socket = connect(server.port, "localhost", () =>
+      socket.write(
+        "GET //[ HTTP/1.1\r\nHost: x\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n" +
+          "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+      ),
+    );
+    let data = "";
+    socket.on("data", (chunk) => (data += chunk));
+    socket.on("close", () => done(data));
+  });
+  expect(reply).toMatch(/^HTTP\/1.1 400 /);
   expect(connected).toEqual([]);
 });
 
