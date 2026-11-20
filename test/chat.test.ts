@@ -65,3 +65,24 @@ test("remind delivers its text as a new input after the delay, across a restart"
   expect(harness.wake().at).toBeUndefined();
   await harness.close(context);
 });
+
+test("remind refuses a delay longer than one year with an error the model reads", async () => {
+  const faux = fauxProvider();
+  const models = createModels();
+  models.setProvider(faux.provider);
+  const model = faux.getModel();
+  faux.setResponses([
+    fauxAssistantMessage(fauxToolCall("remind", { text: "later", seconds: 1e13 }), { stopReason: "toolUse" }),
+    fauxAssistantMessage("That is too far away."),
+  ]);
+
+  const harness = await Harness.open(new MemoryStorage(), { ...createChatHarnessOptions(), models }, context);
+  const root = await harness.root(context, { agent: { model: { provider: model.provider, modelId: model.id } } });
+  await (await root.submit({ type: "input", content: "Remind me much later" }, context)).wait(context);
+  await harness.waitForIdle(context);
+
+  const { messages } = await root.context(context);
+  expect(messages).toContainEqual(expect.objectContaining({ role: "toolResult", toolName: "remind", isError: true }));
+  expect(harness.wake().at).toBeUndefined();
+  await harness.close(context);
+});

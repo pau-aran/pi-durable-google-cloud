@@ -29,6 +29,8 @@ const ReminderTask = defineTask<{ text: string; at: number }, { phase: "wait" } 
     runtime.commit(() => ({ status: "terminal", outcome: { status: "aborted" } }), context),
 });
 
+const MAX_REMINDER_SECONDS = 365 * 24 * 60 * 60;
+
 const remindTool = defineTool({
   name: "remind",
   description: "Send a text to this conversation as a new user input after a delay.",
@@ -36,13 +38,16 @@ const remindTool = defineTool({
     type: "object",
     properties: {
       text: { type: "string", description: "The text to deliver." },
-      seconds: { type: "number", minimum: 0, description: "The delay in seconds." },
+      seconds: { type: "number", minimum: 0, description: "The delay in seconds, at most one year." },
     },
     required: ["text", "seconds"],
     additionalProperties: false,
   },
   execute: async (args, api, context) => {
     const { text, seconds } = args as { text: string; seconds: number };
+    if (seconds > MAX_REMINDER_SECONDS) {
+      return { output: [{ type: "text", text: `The delay is at most ${MAX_REMINDER_SECONDS} s (one year).` }], isError: true };
+    }
     await api.createTask(
       ReminderTask,
       { text, at: api.now() + seconds * 1000 },
